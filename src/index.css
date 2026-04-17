@@ -1,0 +1,136 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* MediGo Design System — Hyperlocal Medicine Delivery
+   Medical teal primary, vibrant, modern, Swiggy/Zepto-inspired.
+   All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 200 30% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 200 30% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 200 30% 12%;
+
+    /* Medical teal — primary brand */
+    --primary: 174 78% 36%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 174 70% 48%;
+
+    /* Soft mint surface */
+    --secondary: 174 35% 95%;
+    --secondary-foreground: 174 78% 22%;
+
+    --muted: 200 20% 96%;
+    --muted-foreground: 200 12% 45%;
+
+    --accent: 28 96% 56%;
+    --accent-foreground: 0 0% 100%;
+
+    --success: 142 71% 40%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 95% 55%;
+    --warning-foreground: 30 60% 15%;
+
+    --destructive: 0 78% 56%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 200 20% 90%;
+    --input: 200 20% 90%;
+    --ring: 174 78% 36%;
+
+    --radius: 0.75rem;
+
+    --gradient-primary: linear-gradient(135deg, hsl(174 78% 36%), hsl(174 70% 48%));
+    --gradient-hero: linear-gradient(140deg, hsl(174 78% 36%) 0%, hsl(190 80% 42%) 100%);
+    --gradient-warm: linear-gradient(135deg, hsl(28 96% 56%), hsl(14 90% 58%));
+
+    --shadow-soft: 0 2px 8px -2px hsl(174 50% 30% / 0.08);
+    --shadow-card: 0 4px 16px -4px hsl(200 30% 20% / 0.08);
+    --shadow-elegant: 0 12px 32px -8px hsl(174 60% 30% / 0.18);
+
+    --sidebar-background: 200 30% 98%;
+    --sidebar-foreground: 200 30% 18%;
+    --sidebar-primary: 174 78% 36%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 174 35% 94%;
+    --sidebar-accent-foreground: 174 78% 22%;
+    --sidebar-border: 200 20% 90%;
+    --sidebar-ring: 174 78% 36%;
+  }
+
+  .dark {
+    --background: 200 30% 7%;
+    --foreground: 200 15% 95%;
+
+    --card: 200 28% 10%;
+    --card-foreground: 200 15% 95%;
+
+    --popover: 200 28% 10%;
+    --popover-foreground: 200 15% 95%;
+
+    --primary: 174 70% 48%;
+    --primary-foreground: 200 30% 8%;
+    --primary-glow: 174 78% 60%;
+
+    --secondary: 200 20% 16%;
+    --secondary-foreground: 200 15% 95%;
+
+    --muted: 200 20% 14%;
+    --muted-foreground: 200 12% 65%;
+
+    --accent: 28 96% 56%;
+    --accent-foreground: 200 30% 8%;
+
+    --success: 142 60% 50%;
+    --success-foreground: 200 30% 8%;
+
+    --warning: 38 95% 55%;
+    --warning-foreground: 30 60% 15%;
+
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 200 20% 18%;
+    --input: 200 20% 18%;
+    --ring: 174 70% 48%;
+
+    --sidebar-background: 200 30% 8%;
+    --sidebar-foreground: 200 15% 92%;
+    --sidebar-primary: 174 70% 48%;
+    --sidebar-primary-foreground: 200 30% 8%;
+    --sidebar-accent: 200 20% 14%;
+    --sidebar-accent-foreground: 200 15% 92%;
+    --sidebar-border: 200 20% 18%;
+    --sidebar-ring: 174 70% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "ss01", "cv11";
+  }
+  h1, h2, h3, h4 {
+    @apply tracking-tight;
+  }
+}
+
+@layer utilities {
+  .gradient-primary { background-image: var(--gradient-primary); }
+  .gradient-hero { background-image: var(--gradient-hero); }
+  .gradient-warm { background-image: var(--gradient-warm); }
+  .shadow-soft { box-shadow: var(--shadow-soft); }
+  .shadow-card { box-shadow: var(--shadow-card); }
+  .shadow-elegant { box-shadow: var(--shadow-elegant); }
+}
