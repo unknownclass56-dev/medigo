@@ -20,12 +20,27 @@ interface AddressForm {
   display: string;
 }
 
+interface ProfileData {
+  full_name: string;
+  phone: string;
+  email: string;
+  bank_name: string;
+  bank_account_number: string;
+  bank_ifsc: string;
+}
+
 const emptyAddr: AddressForm = { line1: "", line2: "", city: "", state: "", pincode: "", lat: null, lng: null, display: "" };
 
 const CustomerProfile = () => {
   const { user } = useAuth();
-  const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [profile, setProfile] = useState<ProfileData>({
+    full_name: "",
+    phone: "",
+    email: "",
+    bank_name: "",
+    bank_account_number: "",
+    bank_ifsc: ""
+  });
   const [addr, setAddr] = useState<AddressForm>(emptyAddr);
   const [addressId, setAddressId] = useState<string | null>(null);
   const [detecting, setDetecting] = useState(false);
@@ -35,13 +50,19 @@ const CustomerProfile = () => {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const [{ data: profile }, { data: address }] = await Promise.all([
-        supabase.from("profiles").select("full_name, phone").eq("user_id", user.id).maybeSingle(),
+      const [{ data: p }, { data: address }] = await Promise.all([
+        supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle(),
         supabase.from("addresses").select("*").eq("user_id", user.id).eq("is_default", true).maybeSingle(),
       ]);
-      if (profile) {
-        setFullName(profile.full_name ?? "");
-        setPhone(profile.phone ?? "");
+      if (p) {
+        setProfile({
+          full_name: p.full_name ?? "",
+          phone: p.phone ?? "",
+          email: p.email ?? user.email ?? "",
+          bank_name: p.bank_name ?? "",
+          bank_account_number: p.bank_account_number ?? "",
+          bank_ifsc: p.bank_ifsc ?? ""
+        });
       }
       if (address) {
         setAddressId(address.id);
@@ -70,19 +91,13 @@ const CustomerProfile = () => {
       async (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
         try {
-          const { data, error } = await supabase.functions.invoke("reverse-geocode", { body: { lat, lng } });
-          if (error || !data) throw error ?? new Error("No data");
-          setAddr({
-            line1: data.line1 || "",
-            line2: data.line2 || "",
-            city: data.city || "",
-            state: data.state || "",
-            pincode: data.pincode || "",
+          setAddr(prev => ({
+            ...prev,
             lat,
             lng,
-            display: data.display_name || "",
-          });
-          toast({ title: "Location detected", description: data.display_name });
+            display: `Detected: ${lat.toFixed(5)}, ${lng.toFixed(5)}`
+          }));
+          toast({ title: "Location detected", description: "Coordinates updated. Please fill address details." });
         } catch (e: any) {
           toast({ title: "Could not get address", description: e?.message ?? "Try again", variant: "destructive" });
         } finally {
@@ -99,7 +114,7 @@ const CustomerProfile = () => {
 
   const save = async () => {
     if (!user) return;
-    if (!fullName.trim() || !phone.trim()) {
+    if (!profile.full_name.trim() || !profile.phone.trim()) {
       toast({ title: "Name and phone are required", variant: "destructive" });
       return;
     }
@@ -111,7 +126,13 @@ const CustomerProfile = () => {
 
     const { error: pErr } = await supabase
       .from("profiles")
-      .update({ full_name: fullName, phone })
+      .update({ 
+        full_name: profile.full_name, 
+        phone: profile.phone,
+        bank_name: profile.bank_name,
+        bank_account_number: profile.bank_account_number,
+        bank_ifsc: profile.bank_ifsc
+      })
       .eq("user_id", user.id);
 
     const addrPayload = {
@@ -145,22 +166,44 @@ const CustomerProfile = () => {
 
   return (
     <div className="container max-w-2xl space-y-6 py-6">
-      <h1 className="text-2xl font-bold">Your profile</h1>
+      <h1 className="text-2xl font-black text-gray-800">Your Account</h1>
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Personal details</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
+      <Card className="shadow-soft border-primary/10">
+        <CardHeader className="bg-primary/5"><CardTitle className="text-sm font-black uppercase tracking-widest text-primary">Identity & Contact</CardTitle></CardHeader>
+        <CardContent className="space-y-4 pt-6">
           <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" value={user?.email ?? ""} disabled />
+            <Label htmlFor="email" className="font-bold text-xs">Email ID</Label>
+            <Input id="email" value={profile.email} disabled className="bg-gray-50 font-bold" />
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="name">Full name</Label>
-            <Input id="name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="e.g. Aarav Sharma" />
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name" className="font-bold text-xs">Full Name</Label>
+              <Input id="name" value={profile.full_name} onChange={(e) => setProfile({ ...profile, full_name: e.target.value })} placeholder="e.g. John Doe" />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="phone" className="font-bold text-xs">Phone Number</Label>
+              <Input id="phone" value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} placeholder="e.g. 9876543210" />
+            </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-soft border-orange-200/50">
+        <CardHeader className="bg-orange-50/50"><CardTitle className="text-sm font-black uppercase tracking-widest text-orange-700">Bank Details (For Payouts)</CardTitle></CardHeader>
+        <CardContent className="space-y-4 pt-6">
           <div className="grid gap-2">
-            <Label htmlFor="phone">Phone</Label>
-            <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="10-digit mobile" />
+            <Label htmlFor="bank_name" className="font-bold text-xs">Bank Name</Label>
+            <Input id="bank_name" value={profile.bank_name} onChange={(e) => setProfile({ ...profile, bank_name: e.target.value })} placeholder="e.g. HDFC Bank" />
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="acc_num" className="font-bold text-xs">Account Number</Label>
+              <Input id="acc_num" value={profile.bank_account_number} onChange={(e) => setProfile({ ...profile, bank_account_number: e.target.value })} placeholder="1234..." />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="ifsc" className="font-bold text-xs">IFSC Code</Label>
+              <Input id="ifsc" value={profile.bank_ifsc} onChange={(e) => setProfile({ ...profile, bank_ifsc: e.target.value.toUpperCase() })} placeholder="HDFC0001234" />
+            </div>
           </div>
         </CardContent>
       </Card>

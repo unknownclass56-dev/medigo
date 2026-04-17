@@ -7,86 +7,136 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Plus, Package, Trash2, Pencil, Check } from "lucide-react";
+import { Loader2, Plus, Package, Trash2, Pencil, Check, Search, Upload, ImageIcon } from "lucide-react";
 
-const EMPTY = { medicineId: "", pricePerPiece: "", pricePerPack: "", piecesPerPack: "10", stock: "" };
+const EMPTY = { medicineName: "", medicineId: "", pricePerPiece: "", pricePerPack: "", piecesPerPack: "10", stock: "" };
 
 const PharmacyInventory = () => {
   const { user } = useAuth();
   const [pharmacyId, setPharmacyId] = useState<string | null>(null);
   const [items, setItems] = useState<any[]>([]);
   const [medicines, setMedicines] = useState<any[]>([]);
+  const [filteredMeds, setFilteredMeds] = useState<any[]>([]);
   const [form, setForm] = useState(EMPTY);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [editStock, setEditStock] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
-  const setF = (k: keyof typeof EMPTY, v: string) => setForm(p => ({ ...p, [k]: v }));
+  const setF = (k: keyof typeof EMPTY, v: string) => {
+    setForm(p => ({ ...p, [k]: v }));
+    if (k === "medicineName") {
+      const filtered = medicines.filter(m => m.name.toLowerCase().includes(v.toLowerCase()));
+      setFilteredMeds(v ? filtered.slice(0, 5) : []);
+      setShowSuggestions(true);
+      if (form.medicineId && v !== form.medicineName) setForm(p => ({ ...p, medicineId: "" }));
+    }
+  };
 
   const load = async (pid: string) => {
     const { data } = await supabase
       .from("pharmacy_inventory")
-      .select("*, medicines(name, generic_name)")
+      .select("*, medicines(name, generic_name, image_url)")
       .eq("pharmacy_id", pid);
     setItems(data ?? []);
+  };
+
+  const fetchMeds = async () => {
+    const { data } = await supabase.from("medicines").select("id, name, image_url").order("name");
+    setMedicines(data ?? []);
   };
 
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const [{ data: ph }, { data: meds }] = await Promise.all([
-        supabase.from("pharmacies").select("id").eq("owner_id", user.id).maybeSingle(),
-        supabase.from("medicines").select("id, name").order("name").limit(200),
-      ]);
-      setMedicines(meds ?? []);
+      const { data: ph } = await supabase.from("pharmacies").select("id").eq("owner_id", user.id).maybeSingle();
+      await fetchMeds();
       if (ph) { setPharmacyId(ph.id); await load(ph.id); }
       setLoading(false);
     })();
   }, [user]);
 
+  const selectMed = (med: any) => {
+    setForm(p => ({ ...p, medicineName: med.name, medicineId: med.id }));
+    setShowSuggestions(false);
+  };
+
   const add = async () => {
-    if (!pharmacyId || !form.medicineId || (!form.pricePerPiece && !form.pricePerPack)) {
-      return toast({ title: "Please select a medicine and enter at least one price", variant: "destructive" });
+    if (!pharmacyId || !form.medicineName || (!form.pricePerPiece && !form.pricePerPack)) {
+      return toast({ title: "Please enter medicine name and at least one price", variant: "destructive" });
     }
     setSaving(true);
+
+    let finalMedId = form.medicineId;
+    let uploadedImageUrl = medicines.find(m => m.id === finalMedId)?.image_url || null;
+
+    // Handle Image Upload if file selected
+    if (imageFile) {
+      const fileName = `${Date.now()}-${imageFile.name}`;
+      const { data: uploadData, error: uploadErr } = await supabase.storage
+        .from("kyc-docs") // Reusing bucket for simplicity, or use 'medicines' if exists
+        .upload(`medicines/${fileName}`, imageFile);
+      
+      if (!uploadErr) {
+        const { data: { publicUrl } } = supabase.storage.from("kyc-docs").getPublicUrl(`medicines/${fileName}`);
+        uploadedImageUrl = publicUrl;
+      }
+    }
+
+    if (!finalMedId) {
+      const existing = medicines.find(m => m.name.toLowerCase() === form.medicineName.toLowerCase());
+      if (existing) {
+        finalMedId = existing.id;
+        // Update image if we have a new one
+        if (uploadedImageUrl) {
+          await supabase.from("medicines").update({ image_url: uploadedImageUrl }).eq("id", finalMedId);
+        }
+      } else {
+        const { data: newMed, error: medErr } = await supabase
+          .from("medicines")
+          .insert({ name: form.medicineName, image_url: uploadedImageUrl })
+          .select("id")
+          .single();
+        
+        if (medErr) {
+          setSaving(false);
+          return toast({ title: "Catalog error", description: medErr.message, variant: "destructive" });
+        }
+        finalMedId = newMed.id;
+        await fetchMeds();
+      }
+    } else if (uploadedImageUrl) {
+      // Update image for existing medicine
+      await supabase.from("medicines").update({ image_url: uploadedImageUrl }).eq("id", finalMedId);
+    }
 
     const piecePrice = form.pricePerPiece ? Number(form.pricePerPiece) : null;
     const packPrice  = form.pricePerPack  ? Number(form.pricePerPack)  : null;
     const basePrice  = piecePrice ?? packPrice ?? 0;
 
-    // Try inserting with the new columns first; fall back to legacy schema if migration not yet run
-    const fullPayload: any = {
+    const { error } = await supabase.from("pharmacy_inventory").insert({
       pharmacy_id: pharmacyId,
-      medicine_id: form.medicineId,
+      medicine_id: finalMedId,
       stock: Number(form.stock || 0),
       price: basePrice,
       pieces_per_pack: Number(form.piecesPerPack || 10),
-    };
-    if (piecePrice != null) fullPayload.price_per_piece = piecePrice;
-    if (packPrice  != null) fullPayload.price_per_pack  = packPrice;
+      price_per_piece: piecePrice,
+      price_per_pack: packPrice,
+    });
 
-    let { error } = await supabase.from("pharmacy_inventory").insert(fullPayload);
-
-    if (error?.message?.includes("schema cache") || error?.message?.includes("column")) {
-      // Migration not run yet — fall back to legacy insert (price only)
-      const legacy = { pharmacy_id: pharmacyId, medicine_id: form.medicineId, price: basePrice, stock: Number(form.stock || 0) };
-      const res = await supabase.from("pharmacy_inventory").insert(legacy);
-      error = res.error ?? null;
-      if (!res.error) {
-        toast({
-          title: "Added (limited mode)",
-          description: "Run the SQL migration in Supabase to enable piece/pack pricing.",
-          variant: "destructive",
-        });
-      }
+    if (error?.code === '23505') {
+       setSaving(false);
+       return toast({ title: "Already in inventory", variant: "destructive" });
     }
 
     setSaving(false);
     if (error) return toast({ title: error.message, variant: "destructive" });
     setForm(EMPTY);
+    setImageFile(null);
     load(pharmacyId);
-    if (!error) toast({ title: "Medicine added to inventory ✅" });
+    toast({ title: "Success ✅", description: "Medicine added to inventory." });
   };
 
   const remove = async (id: string) => {
@@ -102,116 +152,128 @@ const PharmacyInventory = () => {
   };
 
   if (loading) return <div className="flex h-64 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
-  if (!pharmacyId) return <div className="container max-w-3xl py-6"><Card><CardContent className="p-6 text-sm text-muted-foreground">Register your pharmacy first from the Overview tab.</CardContent></Card></div>;
-
+  
   return (
-    <div className="container max-w-3xl space-y-5 py-6">
-      <h1 className="text-2xl font-bold">Inventory</h1>
+    <div className="container max-w-3xl space-y-5 py-6 font-sans">
+      <h1 className="text-2xl font-black text-gray-800 tracking-tight">Inventory Manager</h1>
 
-      {/* ── Add form ── */}
-      <Card>
-        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Plus className="h-4 w-4" />Add Medicine</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          {/* Row 1: Medicine select */}
-          <div className="grid gap-1">
-            <Label>Medicine</Label>
-            <select value={form.medicineId} onChange={e => setF("medicineId", e.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
-              <option value="">Select a medicine…</option>
-              {medicines.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-            </select>
+      <Card className="shadow-elegant border-primary/5">
+        <CardHeader className="bg-[#10847E]/5 border-b border-[#10847E]/10 rounded-t-2xl">
+          <CardTitle className="text-sm font-black uppercase tracking-widest text-[#10847E] flex items-center gap-2">
+            <Plus className="h-4 w-4" /> Add Product to Shelf
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6 pt-8">
+          
+          {/* Row 1: Name + Image */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid gap-2 relative">
+              <Label className="text-xs font-black uppercase tracking-wider text-gray-500">Product Name</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input className="pl-9 h-11 rounded-xl" placeholder="e.g. Paracetamol" value={form.medicineName} onChange={e => setF("medicineName", e.target.value)} onFocus={() => setShowSuggestions(true)} />
+              </div>
+              {showSuggestions && filteredMeds.length > 0 && (
+                <div className="absolute z-50 w-full top-[100%] mt-1 bg-white border rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                  {filteredMeds.map(m => (
+                    <button key={m.id} className="w-full text-left px-4 py-3 text-sm hover:bg-teal-50 flex justify-between items-center border-b last:border-0" onClick={() => selectMed(m)}>
+                      <span className="font-bold">{m.name}</span>
+                      <Badge variant="secondary" className="text-[9px] font-black uppercase">Existing</Badge>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="grid gap-2">
+              <Label className="text-xs font-black uppercase tracking-wider text-gray-500">Product Image</Label>
+              <div className="flex items-center gap-3">
+                <Input type="file" accept="image/*" className="hidden" id="med-img" onChange={e => setImageFile(e.target.files?.[0] || null)} />
+                <Label htmlFor="med-img" className="flex-1 h-11 border-2 border-dashed rounded-xl flex items-center justify-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors">
+                  {imageFile ? (
+                    <span className="text-xs font-bold text-teal-600 truncate px-2">{imageFile.name}</span>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 text-gray-400" />
+                      <span className="text-xs font-bold text-gray-400">Upload Photo</span>
+                    </>
+                  )}
+                </Label>
+                {imageFile && <button onClick={() => setImageFile(null)} className="text-red-500"><Trash2 className="h-4 w-4" /></button>}
+              </div>
+            </div>
           </div>
 
-          {/* Row 2: Pricing grid */}
-          <div className="grid sm:grid-cols-3 gap-3">
-            <div className="grid gap-1">
-              <Label>Price per 1 Piece (₹)</Label>
-              <Input type="number" placeholder="e.g. 5" value={form.pricePerPiece} onChange={e => setF("pricePerPiece", e.target.value)} />
+          {/* Row 2: Pricing */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase text-gray-400 tracking-tighter">₹ Per Piece</Label>
+              <Input type="number" value={form.pricePerPiece} onChange={e => setF("pricePerPiece", e.target.value)} className="h-10 rounded-lg" />
             </div>
-            <div className="grid gap-1">
-              <Label>Price per 1 Pack (₹)</Label>
-              <Input type="number" placeholder="e.g. 45" value={form.pricePerPack} onChange={e => setF("pricePerPack", e.target.value)} />
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase text-gray-400 tracking-tighter">₹ Per Pack</Label>
+              <Input type="number" value={form.pricePerPack} onChange={e => setF("pricePerPack", e.target.value)} className="h-10 rounded-lg" />
             </div>
-            <div className="grid gap-1">
-              <Label>Pieces in 1 Pack</Label>
-              <Input type="number" placeholder="e.g. 10" value={form.piecesPerPack} onChange={e => setF("piecesPerPack", e.target.value)} />
-            </div>
-          </div>
-
-          {/* Row 3: Stock */}
-          <div className="grid sm:grid-cols-2 gap-3">
-            <div className="grid gap-1">
-              <Label>Stock (total pieces)</Label>
-              <Input type="number" placeholder="e.g. 100" value={form.stock} onChange={e => setF("stock", e.target.value)} />
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase text-gray-400 tracking-tighter">Pcs / Pack</Label>
+              <Input type="number" value={form.piecesPerPack} onChange={e => setF("piecesPerPack", e.target.value)} className="h-10 rounded-lg" />
             </div>
           </div>
 
-          {form.pricePerPiece && form.pricePerPack && form.piecesPerPack && (
-            <div className="text-xs text-muted-foreground bg-muted/40 rounded-lg p-2">
-              💡 Per-piece if bought by pack: <strong>₹{(Number(form.pricePerPack) / Number(form.piecesPerPack)).toFixed(2)}</strong> vs single piece: <strong>₹{Number(form.pricePerPiece).toFixed(2)}</strong>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase text-gray-400 tracking-tighter">Initial Stock (Pcs)</Label>
+              <Input type="number" value={form.stock} onChange={e => setF("stock", e.target.value)} className="h-10 rounded-lg" />
             </div>
-          )}
+          </div>
 
-          <Button onClick={add} disabled={saving}>
-            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-            Add to Inventory
+          <Button onClick={add} disabled={saving} className="w-full h-12 rounded-xl bg-[#10847E] font-black text-lg shadow-lg shadow-[#10847E]/20">
+            {saving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Plus className="mr-2 h-5 w-5" />}
+            Add to My Shelf
           </Button>
         </CardContent>
       </Card>
 
-      {/* ── Inventory list ── */}
-      {items.length === 0 ? (
-        <Card><CardContent className="flex flex-col items-center gap-2 p-10 text-center">
-          <Package className="h-8 w-8 text-muted-foreground" />
-          <div className="font-semibold">No inventory yet</div>
-          <div className="text-sm text-muted-foreground">Add medicines so customers can order from you.</div>
-        </CardContent></Card>
-      ) : (
-        items.map(it => (
-          <Card key={it.id}>
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold">{it.medicines?.name}</div>
-                  {it.medicines?.generic_name && <div className="text-xs text-muted-foreground">{it.medicines.generic_name}</div>}
+      <div className="space-y-4 pt-10">
+        <h2 className="text-xl font-black text-gray-800 tracking-tight flex items-center gap-2">
+           <Package className="h-6 w-6 text-[#10847E]" /> Your Current Shelf
+        </h2>
+        <div className="grid gap-4">
+          {items.map(it => (
+            <Card key={it.id} className="hover:shadow-lg transition-all border-none shadow-soft group overflow-hidden bg-white">
+              <CardContent className="p-0 flex items-stretch">
+                <div className="w-24 bg-gray-50 flex items-center justify-center border-r">
+                   {it.medicines?.image_url ? (
+                     <img src={it.medicines.image_url} className="h-16 w-16 object-contain" />
+                   ) : (
+                     <ImageIcon className="h-8 w-8 text-gray-200" />
+                   )}
+                </div>
+                <div className="flex-1 p-5 flex items-center justify-between">
+                  <div className="space-y-1">
+                    <h4 className="font-black text-lg text-gray-800 tracking-tight">{it.medicines?.name}</h4>
+                    <div className="flex gap-2">
+                      {it.price_per_piece && <Badge variant="outline" className="text-[10px] font-black">₹{it.price_per_piece}/pc</Badge>}
+                      {it.price_per_pack && <Badge variant="outline" className="text-[10px] font-black">₹{it.price_per_pack}/pk</Badge>}
+                    </div>
+                  </div>
 
-                  {/* Pricing badges */}
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {it.price_per_piece != null && (
-                      <Badge variant="secondary" className="text-xs">
-                        1 Piece = ₹{Number(it.price_per_piece).toFixed(2)}
-                      </Badge>
-                    )}
-                    {it.price_per_pack != null && (
-                      <Badge variant="outline" className="text-xs">
-                        1 Pack ({it.pieces_per_pack ?? "?"} pcs) = ₹{Number(it.price_per_pack).toFixed(2)}
-                      </Badge>
-                    )}
-                    {!it.price_per_piece && !it.price_per_pack && (
-                      <Badge variant="secondary">₹{Number(it.price).toFixed(2)}</Badge>
-                    )}
+                  <div className="flex items-center gap-6">
+                    <div className="text-right">
+                       <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">STOCK</div>
+                       <div className="text-2xl font-black text-[#10847E]">{it.stock} <span className="text-[10px] text-gray-400">pcs</span></div>
+                    </div>
+                    <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-400 hover:text-primary" onClick={() => { setEditId(it.id); setEditStock(String(it.stock)); }}><Pencil className="h-4 w-4" /></Button>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-400 hover:text-red-500" onClick={() => remove(it.id)}><Trash2 className="h-4 w-4" /></Button>
+                    </div>
                   </div>
                 </div>
-
-                {/* Stock edit */}
-                <div className="flex items-center gap-2 shrink-0">
-                  {editId === it.id ? (
-                    <>
-                      <Input className="h-8 w-20 text-xs" type="number" value={editStock} onChange={e => setEditStock(e.target.value)} />
-                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => saveStock(it.id)}><Check className="h-4 w-4 text-green-600" /></Button>
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-sm text-muted-foreground">Stock: <strong>{it.stock}</strong></div>
-                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setEditId(it.id); setEditStock(String(it.stock)); }}><Pencil className="h-3.5 w-3.5" /></Button>
-                    </>
-                  )}
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => remove(it.id)}><Trash2 className="h-4 w-4" /></Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))
-      )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };

@@ -28,6 +28,7 @@ import DeliveryKyc from "./pages/delivery/DeliveryKyc.tsx";
 import DeliveryProfile from "./pages/delivery/DeliveryProfile.tsx";
 import AdminHome from "./pages/admin/AdminHome.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import { TermsOfService, PrivacyPolicy, RefundPolicy } from "./pages/Policies.tsx";
 
 const queryClient = new QueryClient();
 
@@ -40,15 +41,14 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
+          <CartProvider>
+            <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<AuthPage />} />
 
             <Route path="/app" element={
               <ProtectedRoute allow={["customer"]}>
-                <CartProvider>
-                  <CustomerLayout />
-                </CartProvider>
+                <CustomerLayout />
               </ProtectedRoute>
             }>
               <Route index element={<CustomerHome />} />
@@ -80,8 +80,12 @@ const App = () => (
               <ProtectedRoute allow={["admin"]}><AdminHome /></ProtectedRoute>
             } />
 
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/refund" element={<RefundPolicy />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </CartProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
