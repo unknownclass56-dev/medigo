@@ -25,8 +25,8 @@ interface ProfileData {
   phone: string;
   email: string;
   bank_name: string;
-  bank_account_number: string;
-  bank_ifsc: string;
+  account_number: string;
+  ifsc_code: string;
 }
 
 const emptyAddr: AddressForm = { line1: "", line2: "", city: "", state: "", pincode: "", lat: null, lng: null, display: "" };
@@ -38,8 +38,8 @@ const CustomerProfile = () => {
     phone: "",
     email: "",
     bank_name: "",
-    bank_account_number: "",
-    bank_ifsc: ""
+    account_number: "",
+    ifsc_code: ""
   });
   const [addr, setAddr] = useState<AddressForm>(emptyAddr);
   const [addressId, setAddressId] = useState<string | null>(null);
@@ -58,10 +58,10 @@ const CustomerProfile = () => {
         setProfile({
           full_name: p.full_name ?? "",
           phone: p.phone ?? "",
-          email: p.email ?? user.email ?? "",
+          email: (p as any).email ?? user.email ?? "",
           bank_name: p.bank_name ?? "",
-          bank_account_number: p.bank_account_number ?? "",
-          bank_ifsc: p.bank_ifsc ?? ""
+          account_number: p.account_number ?? "",
+          ifsc_code: p.ifsc_code ?? ""
         });
       }
       if (address) {
@@ -130,8 +130,8 @@ const CustomerProfile = () => {
         full_name: profile.full_name, 
         phone: profile.phone,
         bank_name: profile.bank_name,
-        bank_account_number: profile.bank_account_number,
-        bank_ifsc: profile.bank_ifsc
+        account_number: profile.account_number,
+        ifsc_code: profile.ifsc_code
       })
       .eq("user_id", user.id);
 
@@ -198,11 +198,11 @@ const CustomerProfile = () => {
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="acc_num" className="font-bold text-xs">Account Number</Label>
-              <Input id="acc_num" value={profile.bank_account_number} onChange={(e) => setProfile({ ...profile, bank_account_number: e.target.value })} placeholder="1234..." />
+              <Input id="acc_num" value={profile.account_number} onChange={(e) => setProfile({ ...profile, account_number: e.target.value })} placeholder="1234..." />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="ifsc" className="font-bold text-xs">IFSC Code</Label>
-              <Input id="ifsc" value={profile.bank_ifsc} onChange={(e) => setProfile({ ...profile, bank_ifsc: e.target.value.toUpperCase() })} placeholder="HDFC0001234" />
+              <Input id="ifsc" value={profile.ifsc_code} onChange={(e) => setProfile({ ...profile, ifsc_code: e.target.value.toUpperCase() })} placeholder="HDFC0001234" />
             </div>
           </div>
         </CardContent>

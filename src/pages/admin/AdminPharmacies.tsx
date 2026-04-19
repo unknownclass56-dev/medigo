@@ -34,7 +34,7 @@ const AdminPharmacies = () => {
     fetchPharmacies();
   }, [filter]);
 
-  const updateStatus = async (id: string, status: string) => {
+  const updateStatus = async (id: string, status: "approved" | "pending" | "rejected" | "suspended") => {
     const { error } = await supabase
       .from("pharmacies")
       .update({ status })

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/use-toast";
-import { Settings, Save, Percent, Truck, MapPin, Clock, CreditCard, ShieldAlert } from "lucide-react";
+import { Settings, Save, Percent, Truck, MapPin, Clock, CreditCard, ShieldAlert, LayoutDashboard, Loader2 } from "lucide-react";
 
 const AdminSettings = () => {
   const { toast } = useToast();
@@ -233,20 +233,3 @@ const AdminSettings = () => {
 };
 
 export default AdminSettings;
-
-const Loader2 = ({ className }: { className?: string }) => (
-  <svg
-    className={className}
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-  </svg>
-);

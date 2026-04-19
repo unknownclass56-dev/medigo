@@ -381,6 +381,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          commission_amount: number | null
           created_at: string
           customer_id: string
           delivery_address: Json
@@ -389,12 +390,14 @@ export type Database = {
           delivery_lng: number
           delivery_otp: string | null
           delivery_partner_id: string | null
+          dp_settlement_status: string | null
           id: string
           notes: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_status: Database["public"]["Enums"]["payment_status"]
           pharmacy_id: string | null
           pharmacy_offer_expires_at: string | null
+          pharmacy_settlement_status: string | null
           razorpay_order_id: string | null
           razorpay_payment_id: string | null
           status: Database["public"]["Enums"]["order_status"]
@@ -403,6 +406,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          commission_amount?: number | null
           created_at?: string
           customer_id: string
           delivery_address: Json
@@ -411,12 +415,14 @@ export type Database = {
           delivery_lng: number
           delivery_otp?: string | null
           delivery_partner_id?: string | null
+          dp_settlement_status?: string | null
           id?: string
           notes?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           payment_status?: Database["public"]["Enums"]["payment_status"]
           pharmacy_id?: string | null
           pharmacy_offer_expires_at?: string | null
+          pharmacy_settlement_status?: string | null
           razorpay_order_id?: string | null
           razorpay_payment_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
@@ -425,6 +431,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          commission_amount?: number | null
           created_at?: string
           customer_id?: string
           delivery_address?: Json
@@ -433,12 +440,14 @@ export type Database = {
           delivery_lng?: number
           delivery_otp?: string | null
           delivery_partner_id?: string | null
+          dp_settlement_status?: string | null
           id?: string
           notes?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           payment_status?: Database["public"]["Enums"]["payment_status"]
           pharmacy_id?: string | null
           pharmacy_offer_expires_at?: string | null
+          pharmacy_settlement_status?: string | null
           razorpay_order_id?: string | null
           razorpay_payment_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
@@ -541,7 +550,10 @@ export type Database = {
           id: string
           medicine_id: string
           pharmacy_id: string
+          pieces_per_pack: number | null
           price: number
+          price_per_pack: number | null
+          price_per_piece: number | null
           stock: number
           updated_at: string
         }
@@ -550,7 +562,10 @@ export type Database = {
           id?: string
           medicine_id: string
           pharmacy_id: string
+          pieces_per_pack?: number | null
           price: number
+          price_per_pack?: number | null
+          price_per_piece?: number | null
           stock?: number
           updated_at?: string
         }
@@ -559,7 +574,10 @@ export type Database = {
           id?: string
           medicine_id?: string
           pharmacy_id?: string
+          pieces_per_pack?: number | null
           price?: number
+          price_per_pack?: number | null
+          price_per_piece?: number | null
           stock?: number
           updated_at?: string
         }
@@ -582,6 +600,9 @@ export type Database = {
       }
       platform_config: {
         Row: {
+          banner_badge: string | null
+          banner_subtitle: string | null
+          banner_title: string | null
           commission_pct: number
           delivery_base_charge: number
           delivery_per_km: number
@@ -589,8 +610,12 @@ export type Database = {
           id: number
           max_delivery_radius_km: number
           pharmacy_accept_window_seconds: number
+          service_charge: number
         }
         Insert: {
+          banner_badge?: string | null
+          banner_subtitle?: string | null
+          banner_title?: string | null
           commission_pct?: number
           delivery_base_charge?: number
           delivery_per_km?: number
@@ -598,8 +623,12 @@ export type Database = {
           id?: number
           max_delivery_radius_km?: number
           pharmacy_accept_window_seconds?: number
+          service_charge?: number
         }
         Update: {
+          banner_badge?: string | null
+          banner_subtitle?: string | null
+          banner_title?: string | null
           commission_pct?: number
           delivery_base_charge?: number
           delivery_per_km?: number
@@ -607,6 +636,7 @@ export type Database = {
           id?: number
           max_delivery_radius_km?: number
           pharmacy_accept_window_seconds?: number
+          service_charge?: number
         }
         Relationships: []
       }
@@ -644,28 +674,40 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_number: string | null
           avatar_url: string | null
+          bank_name: string | null
           created_at: string
+          email: string | null
           full_name: string | null
           id: string
+          ifsc_code: string | null
           phone: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          account_number?: string | null
           avatar_url?: string | null
+          bank_name?: string | null
           created_at?: string
+          email?: string | null
           full_name?: string | null
           id?: string
+          ifsc_code?: string | null
           phone?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          account_number?: string | null
           avatar_url?: string | null
+          bank_name?: string | null
           created_at?: string
+          email?: string | null
           full_name?: string | null
           id?: string
+          ifsc_code?: string | null
           phone?: string | null
           updated_at?: string
           user_id?: string

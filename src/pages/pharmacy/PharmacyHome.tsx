@@ -38,7 +38,7 @@ const PharmacyHome = () => {
     if (!user) return;
     const { data } = await supabase.from("pharmacies").select("*").eq("owner_id", user.id).maybeSingle();
     if (data) {
-      setPharmacy(data as Pharmacy);
+      setPharmacy(data as unknown as Pharmacy);
       setForm({
         name: data.name, address: data.address, city: data.city ?? "", pincode: data.pincode ?? "",
         phone: data.phone ?? "", license_no: data.license_no ?? "", lat: data.lat, lng: data.lng,

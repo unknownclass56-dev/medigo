@@ -108,7 +108,7 @@ const AdminOverview = () => {
                 <div className={`p-3 rounded-2xl ${s.bg} ${s.color}`}>
                   <s.icon className="h-6 w-6" />
                 </div>
-                <Badge variant={s.up ? "success" : "warning"} className="text-[10px] font-black uppercase tracking-widest">
+                <Badge variant={s.up ? "default" : "secondary"} className="text-[10px] font-black uppercase tracking-widest">
                   {s.trend}
                 </Badge>
               </div>

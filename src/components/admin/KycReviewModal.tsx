@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/card"; // Wait, Dialog is usually in dialog.tsx
-// Let me check the correct Dialog imports from src/components/ui/dialog.tsx
 import { Dialog as RadixDialog, DialogContent as RadixDialogContent, DialogHeader as RadixDialogHeader, DialogTitle as RadixDialogTitle, DialogFooter as RadixDialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

@@ -17,16 +17,17 @@ const AdminComplaints = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("complaints")
-        .select(`
-          *,
-          profiles:user_id (
-            full_name
-          )
-        `)
+        .select("*")
         .order("created_at", { ascending: false });
-      
       if (error) throw error;
-      return data;
+      const userIds = Array.from(new Set((data ?? []).map((c) => c.user_id)));
+      const { data: profs } = userIds.length
+        ? await supabase.from("profiles").select("user_id, full_name").in("user_id", userIds)
+        : { data: [] as any[] };
+      return (data ?? []).map((c) => ({
+        ...c,
+        profiles: profs?.find((p) => p.user_id === c.user_id) ?? null,
+      }));
     },
   });
 
