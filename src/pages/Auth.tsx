@@ -43,24 +43,6 @@ const AuthPage = () => {
 
   const isPreviewOrigin = window.location.hostname.includes("id-preview--");
 
-  const startGoogleSignIn = async (redirectUri: string) => {
-    setLoading(true);
-    try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: redirectUri,
-        extraParams: { prompt: "select_account" },
-      });
-      if (result.redirected) return;
-      if (result.error) {
-        toast.error(result.error.message || "Google sign-in failed");
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Google sign-in failed");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleGoogleSignIn = async () => {
     if (isPreviewOrigin) {
       const targetUrl = new URL("/auth", PUBLISHED_APP_URL);
@@ -72,7 +54,41 @@ const AuthPage = () => {
       return;
     }
 
-    await startGoogleSignIn(window.location.origin);
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: window.location.origin,
+          queryParams: {
+            prompt: "select_account",
+          },
+        },
+      });
+      if (error) throw error;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Google sign-in failed");
+      setLoading(false);
+    }
+  };
+
+  const startGoogleSignIn = async (redirectUri: string) => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: redirectUri,
+          queryParams: {
+            prompt: "select_account",
+          },
+        },
+      });
+      if (error) throw error;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Google sign-in failed");
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
