@@ -27,7 +27,7 @@ const signInSchema = z.object({
   password: z.string().min(1),
 });
 
-const PUBLISHED_APP_URL = "https://remedy-route-hub.lovable.app";
+const PUBLISHED_APP_URL = "https://medigo-nine.vercel.app";
 
 const AuthPage = () => {
   const navigate = useNavigate();
