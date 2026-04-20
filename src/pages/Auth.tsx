@@ -146,12 +146,12 @@ const AuthPage = () => {
           <div className="flex h-9 w-9 items-center justify-center rounded-xl gradient-primary text-primary-foreground shadow-soft">
             <Pill className="h-5 w-5" />
           </div>
-          <span className="text-xl font-bold">MediGo</span>
+          <span className="text-xl font-bold">MediHelth</span>
         </Link>
 
         <Card className="shadow-elegant">
           <CardHeader>
-            <CardTitle className="text-2xl">Welcome to MediGo</CardTitle>
+            <CardTitle className="text-2xl">Welcome to MediHelth</CardTitle>
             <p className="text-sm text-muted-foreground">Medicines delivered in minutes from your nearest pharmacy.</p>
           </CardHeader>
           <CardContent>
