@@ -8,10 +8,13 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter 
 } from "@/components/ui/sheet";
 import { 
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription
+} from "@/components/ui/dialog";
+import { 
   Pill, Search, ShoppingCart, User, MapPin, 
   ChevronRight, Star, Clock, ShieldCheck, 
   Package, LayoutDashboard, Truck, X, Minus, Plus, ShoppingBag, Loader2, ArrowRight, Zap, Heart, CheckCircle2,
-  Instagram, Twitter, Facebook, MessageCircle, Send, Globe, LifeBuoy
+  Instagram, Twitter, Facebook, MessageCircle, Send, Globe, LifeBuoy, MessageSquare
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, primaryRoleRoute } from "@/lib/auth";
@@ -37,6 +40,7 @@ const Landing = () => {
 
   const [feedback, setFeedback] = useState({ message: "", rating: 5 });
   const [submitting, setSubmitting] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
   useEffect(() => {
     if ("geolocation" in navigator) {
@@ -127,6 +131,7 @@ const Landing = () => {
       if (error) throw error;
       toast({ title: "Feedback Sent!", description: "Thank you for your valuable feedback." });
       setFeedback({ message: "", rating: 5 });
+      setIsFeedbackOpen(false);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -152,9 +157,14 @@ const Landing = () => {
       <header className="sticky top-0 z-[100] w-full glass border-b transition-all duration-300">
         <div className="container mx-auto px-4 h-20 flex items-center justify-between gap-6">
           <Link to="/" className="flex items-center gap-3 group transition-transform active:scale-95 shrink-0">
-            <div className="flex h-12 w-12 items-center justify-center overflow-hidden">
-              <img src="/logo.png" alt="MediHelth" className="h-full w-full object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl gradient-primary text-white shadow-lg logo-fallback">
+            <div className="flex h-12 w-12 items-center justify-center relative">
+              <img 
+                src="/logo.png" 
+                alt="MediHelth" 
+                className="h-full w-full object-contain z-10" 
+                onError={(e) => (e.currentTarget.style.opacity = '0')} 
+              />
+              <div className="absolute inset-0 flex h-12 w-12 items-center justify-center rounded-2xl gradient-primary text-white shadow-lg -z-0 opacity-20">
                 <Pill className="h-7 w-7" />
               </div>
             </div>
@@ -324,36 +334,6 @@ const Landing = () => {
             ))}
           </div>
         </section>
-
-        {/* Feedback Section */}
-        <section className="py-20 rounded-[64px] bg-slate-900 text-white p-10 md:p-20 relative overflow-hidden">
-           <div className="absolute top-0 right-0 h-64 w-64 bg-primary/10 blur-[100px]" />
-           <div className="max-w-xl mx-auto space-y-12 relative z-10 text-center">
-              <div className="space-y-4">
-                <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] font-black px-5 py-2 rounded-full uppercase tracking-[0.3em]">Share your thoughts</Badge>
-                <h2 className="text-5xl font-black tracking-tighter italic">We Value Your Feedback</h2>
-                <p className="text-slate-400 font-bold">Help us improve the MediHelth experience.</p>
-              </div>
-              <form onSubmit={submitFeedback} className="space-y-6">
-                 <div className="flex justify-center gap-4 py-4">
-                   {[1,2,3,4,5].map(star => (
-                     <button key={star} type="button" onClick={() => setFeedback({ ...feedback, rating: star })} className={`transition-all ${feedback.rating >= star ? "text-yellow-400 scale-125" : "text-slate-700"}`}>
-                        <Star className="h-8 w-8 fill-current" />
-                     </button>
-                   ))}
-                 </div>
-                 <Textarea 
-                   placeholder="Your message..." 
-                   className="bg-white/5 border-white/10 text-white rounded-2xl h-32 focus:ring-primary/20"
-                   value={feedback.message}
-                   onChange={(e) => setFeedback({ ...feedback, message: e.target.value })}
-                 />
-                 <Button disabled={submitting} type="submit" size="lg" className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 font-black text-lg">
-                   {submitting ? <Loader2 className="h-6 w-6 animate-spin" /> : <><Send className="mr-2 h-5 w-5" /> Send Feedback</>}
-                 </Button>
-              </form>
-           </div>
-        </section>
       </main>
 
       {/* Footer */}
@@ -377,6 +357,39 @@ const Landing = () => {
                 <li><Link to="/auth" className="hover:text-primary">Login</Link></li>
                 <li><Link to="/terms" className="hover:text-primary">Terms of Use</Link></li>
                 <li><Link to="/privacy" className="hover:text-primary">Privacy Shield</Link></li>
+                <li>
+                  <Dialog open={isFeedbackOpen} onOpenChange={setIsFeedbackOpen}>
+                    <DialogTrigger asChild>
+                      <button className="flex items-center gap-2 hover:text-primary transition-colors">
+                        <MessageSquare className="h-4 w-4" /> Give Feedback
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px] rounded-[32px]">
+                      <DialogHeader>
+                        <DialogTitle className="text-2xl font-black tracking-tighter italic">Feedback</DialogTitle>
+                        <DialogDescription className="font-bold">Share your experience with MediHelth.</DialogDescription>
+                      </DialogHeader>
+                      <form onSubmit={submitFeedback} className="space-y-6 pt-4">
+                        <div className="flex justify-center gap-4 py-2">
+                          {[1,2,3,4,5].map(star => (
+                            <button key={star} type="button" onClick={() => setFeedback({ ...feedback, rating: star })} className={`transition-all ${feedback.rating >= star ? "text-yellow-400 scale-110" : "text-slate-200"}`}>
+                               <Star className="h-8 w-8 fill-current" />
+                            </button>
+                          ))}
+                        </div>
+                        <Textarea 
+                          placeholder="Your message..." 
+                          className="rounded-2xl h-32"
+                          value={feedback.message}
+                          onChange={(e) => setFeedback({ ...feedback, message: e.target.value })}
+                        />
+                        <Button disabled={submitting} type="submit" className="w-full h-14 rounded-2xl bg-primary font-black">
+                          {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : "Submit Feedback"}
+                        </Button>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                </li>
              </ul>
           </div>
           <div className="space-y-8">
@@ -384,7 +397,6 @@ const Landing = () => {
              <ul className="space-y-4 text-slate-500 font-black text-sm">
                 <li><div className="flex items-center gap-2 hover:text-primary cursor-pointer"><Globe className="h-4 w-4" /> Sitemap</div></li>
                 <li><div className="flex items-center gap-2 hover:text-primary cursor-pointer"><LifeBuoy className="h-4 w-4" /> Accessibility</div></li>
-                <li><div className="flex items-center gap-2 hover:text-primary cursor-pointer"><Zap className="h-4 w-4" /> Help Center</div></li>
              </ul>
           </div>
           <div className="space-y-8">

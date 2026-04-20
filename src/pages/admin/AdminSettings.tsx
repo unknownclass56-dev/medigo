@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/use-toast";
-import { Settings, Save, Percent, Truck, MapPin, Clock, CreditCard, ShieldAlert, LayoutDashboard, Loader2 } from "lucide-react";
+import { Settings, Save, Percent, Truck, MapPin, Clock, CreditCard, ShieldAlert, LayoutDashboard, Loader2, MessageCircle } from "lucide-react";
 
 const AdminSettings = () => {
   const { toast } = useToast();
@@ -215,6 +215,13 @@ const AdminSettings = () => {
               <div className="space-y-2">
                 <Label htmlFor="banner_subtitle" className="font-semibold text-sm">Banner Subtitle</Label>
                 <Input id="banner_subtitle" name="banner_subtitle" value={formData.banner_subtitle || ''} onChange={handleChange} placeholder="Verified Pharmacies..." />
+              </div>
+              <div className="space-y-2 pt-2 border-t border-purple-100">
+                <Label htmlFor="whatsapp_number" className="font-semibold text-sm flex items-center gap-2">
+                  <MessageCircle className="h-4 w-4 text-green-600" /> Support WhatsApp Number (with country code)
+                </Label>
+                <Input id="whatsapp_number" name="whatsapp_number" value={formData.whatsapp_number || ''} onChange={handleChange} placeholder="91XXXXXXXXXX" />
+                <p className="text-[10px] text-muted-foreground font-bold italic">Example: 919000000000 (No '+' or spaces)</p>
               </div>
             </CardContent>
           </Card>
