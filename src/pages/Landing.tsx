@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -145,12 +146,54 @@ const Landing = () => {
     }
   };
 
+  const schemaData = {
+    "@context": "https://schema.org",
+    "@type": "MedicalBusiness",
+    "name": "MediHelth",
+    "alternateName": "MediHelth Pharmacy Network",
+    "url": window.location.origin,
+    "logo": `${window.location.origin}/logo.png`,
+    "description": "MediHelth is India's premium digital pharmacy network providing 30-minute medicine delivery from verified local pharmacies.",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Bhopal",
+      "addressRegion": "MP",
+      "addressCountry": "IN"
+    },
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "telephone": config.whatsapp_number,
+      "contactType": "customer service"
+    }
+  };
+
   return (
     <div 
       className={`min-h-screen bg-slate-50/50 selection:bg-primary/10 selection:text-primary transition-all duration-300 ${isContrast ? "grayscale contrast-125" : ""} ${isDyslexicFont ? "font-mono" : "font-sans"}`}
       style={{ fontSize: `${fontSize}px` }}
     >
-      
+      <Helmet>
+        <title>MediHelth | 30-Min Medicine Delivery from Verified Pharmacies</title>
+        <meta name="description" content="Order medicines online from MediHelth and get 30-minute delivery from verified local pharmacies. Best prices, authentic healthcare, and trusted logistics in Bhopal, India." />
+        <meta name="keywords" content="online pharmacy, medicine delivery, 30 min delivery, authentic medicine, health tech, pharmacy network, Bhopal medicines, MediHelth" />
+        
+        {/* OpenGraph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={window.location.origin} />
+        <meta property="og:title" content="MediHelth | Fastest Medicine Delivery" />
+        <meta property="og:description" content="Get authentic medicines delivered in 30 minutes from your neighborhood pharmacy." />
+        <meta property="og:image" content={`${window.location.origin}/logo.png`} />
+
+        {/* Twitter */}
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:title" content="MediHelth | Digital Pharmacy Network" />
+        <meta property="twitter:description" content="Order medicines online with trust and speed." />
+
+        <script type="application/ld+json">
+          {JSON.stringify(schemaData)}
+        </script>
+      </Helmet>
+
       {/* WhatsApp Floating Button */}
       <a 
         href={`https://wa.me/${config.whatsapp_number}?text=Hello%20MediHelth%2C%20I%20have%20a%20query%20regarding%20my%20order.`}
@@ -230,7 +273,7 @@ const Landing = () => {
               <div className="flex h-12 w-12 items-center justify-center relative">
                 <img 
                   src="/logo.png" 
-                  alt="MediHelth" 
+                  alt="MediHelth Logo" 
                   className="h-full w-full object-contain z-10" 
                   onError={(e) => (e.currentTarget.style.opacity = '0')} 
                 />
@@ -243,7 +286,7 @@ const Landing = () => {
               </span>
             </Link>
 
-            {/* Mobile Bag & Login (Small icons) */}
+            {/* Mobile Bag & Login */}
             <div className="flex lg:hidden items-center gap-2">
                {user ? (
                 <Link to={primaryRoleRoute(roles)} className="h-10 w-10 bg-slate-100 rounded-xl flex items-center justify-center text-primary"><LayoutDashboard className="h-5 w-5" /></Link>
@@ -257,12 +300,10 @@ const Landing = () => {
                       {count > 0 && <span className="absolute -top-1 -right-1 h-4 w-4 bg-primary rounded-full text-[8px] font-black flex items-center justify-center">{count}</span>}
                     </button>
                  </SheetTrigger>
-                 {/* ... (Sheet content remains same) */}
                </Sheet>
             </div>
           </div>
 
-          {/* Search Bar - Visible on Mobile & Desktop */}
           <div className="w-full lg:flex-1 max-w-2xl relative group">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 hidden md:flex items-center gap-2 pr-3 border-r border-slate-200">
               <MapPin className="h-4 w-4 text-primary animate-pulse" />
@@ -279,7 +320,6 @@ const Landing = () => {
             </Button>
           </div>
 
-          {/* Desktop Right Nav */}
           <div className="hidden lg:flex items-center gap-3">
             {user ? (
               <Button asChild variant="ghost" className="flex gap-2 font-bold text-slate-600 rounded-xl hover:bg-slate-100">
@@ -314,7 +354,6 @@ const Landing = () => {
                     <ShoppingBag className="h-5 w-5 text-primary" /> Your Shopping Bag
                   </SheetTitle>
                 </SheetHeader>
-                
                 <div className="flex-1 overflow-y-auto p-8 scrollbar-hide space-y-8">
                   {items.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-center space-y-6">
@@ -351,19 +390,14 @@ const Landing = () => {
                     </div>
                   )}
                 </div>
-
                 {items.length > 0 && (
-                  <SheetFooter className="p-8 border-t bg-white flex-col gap-8 shadow-[0_-20px_40px_-20px_rgba(0,0,0,0.1)]">
-                    <div className="space-y-4 w-full">
-                       <div className="flex justify-between items-center">
-                          <span className="text-slate-900 font-black uppercase tracking-widest text-xs">Total Payable</span>
-                          <span className="text-3xl font-black text-slate-900 tracking-tighter">₹{subtotal.toFixed(2)}</span>
-                       </div>
+                  <SheetFooter className="p-8 border-t bg-white flex-col gap-8">
+                    <div className="flex justify-between items-center w-full">
+                       <span className="text-slate-900 font-black uppercase tracking-widest text-xs">Total</span>
+                       <span className="text-3xl font-black text-slate-900 tracking-tighter">₹{subtotal.toFixed(2)}</span>
                     </div>
-                    <Button asChild className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 font-black text-lg shadow-xl shadow-primary/20 transition-all active:scale-[0.98]">
-                       <Link to="/app/cart" className="flex items-center gap-2">
-                          Checkout Now <ArrowRight className="h-5 w-5" />
-                       </Link>
+                    <Button asChild className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 font-black text-lg">
+                       <Link to="/app/cart" className="flex items-center gap-2">Checkout <ArrowRight className="h-5 w-5" /></Link>
                     </Button>
                   </SheetFooter>
                 )}
@@ -384,13 +418,13 @@ const Landing = () => {
               <Badge className="bg-white/5 text-white border-white/10 text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-widest">{config.banner_badge}</Badge>
               <h1 className="text-6xl md:text-8xl font-black text-white leading-[0.85] tracking-tighter italic">{config.banner_title}</h1>
               <p className="text-slate-400 font-bold text-xl md:text-2xl leading-relaxed max-w-lg mx-auto md:mx-0">{config.banner_subtitle}</p>
-              <Button size="lg" className="bg-white text-slate-900 hover:bg-primary hover:text-white font-black rounded-2xl h-16 px-10 text-lg shadow-2xl transition-all">Order Now <ArrowRight className="ml-2 h-6 w-6" /></Button>
+              <Button size="lg" className="bg-white text-slate-900 hover:bg-primary hover:text-white font-black rounded-2xl h-16 px-10 text-lg shadow-2xl transition-all">Order Online Now <ArrowRight className="ml-2 h-6 w-6" /></Button>
             </div>
             <div className="flex-1 relative hidden lg:flex justify-end">
               <div className="animate-float relative">
                 <div className="glass p-3 rounded-[40px] shadow-2xl border-white/20 w-[350px] overflow-hidden">
                   <div className="aspect-[4/5] w-full rounded-[30px] overflow-hidden bg-slate-100">
-                    <img src="/hero-health.png" alt="Health" className="w-full h-full object-cover" />
+                    <img src="/hero-health.png" alt="Best Medicine Delivery in India" className="w-full h-full object-cover" />
                   </div>
                 </div>
               </div>
@@ -398,11 +432,30 @@ const Landing = () => {
           </div>
         </section>
 
+        {/* Benefits Section for SEO */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
+           <div className="p-8 bg-white rounded-[32px] shadow-soft border border-slate-100">
+              <div className="h-12 w-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6"><Truck className="h-6 w-6" /></div>
+              <h2 className="text-xl font-black text-slate-900 mb-2">30-Min Express Delivery</h2>
+              <p className="text-slate-500 font-medium text-sm leading-relaxed">MediHelth connects you with the nearest verified pharmacy for lightning-fast delivery of life-saving medicines.</p>
+           </div>
+           <div className="p-8 bg-white rounded-[32px] shadow-soft border border-slate-100">
+              <div className="h-12 w-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6"><ShieldCheck className="h-6 w-6" /></div>
+              <h2 className="text-xl font-black text-slate-900 mb-2">100% Authentic Medicines</h2>
+              <p className="text-slate-500 font-medium text-sm leading-relaxed">Every medicine on our platform is sourced from licensed pharmacies with proper prescription verification.</p>
+           </div>
+           <div className="p-8 bg-white rounded-[32px] shadow-soft border border-slate-100">
+              <div className="h-12 w-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6"><Heart className="h-6 w-6" /></div>
+              <h2 className="text-xl font-black text-slate-900 mb-2">Patient First Healthcare</h2>
+              <p className="text-slate-500 font-medium text-sm leading-relaxed">We prioritize your health by offering the best discounts and a seamless ordering experience from your phone.</p>
+           </div>
+        </section>
+
         {/* Live Inventory */}
         <section id="catalog" className="space-y-12">
           <div className="flex items-center gap-4 border-b border-slate-100 pb-10">
              <div className="h-12 w-2 bg-primary rounded-full" />
-             <h2 className="text-4xl font-black text-slate-900 tracking-tighter italic">Live Inventory</h2>
+             <h2 className="text-4xl font-black text-slate-900 tracking-tighter italic">Explore Medicine Catalog</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {loading ? (
@@ -410,14 +463,14 @@ const Landing = () => {
             ) : filteredMedicines.length === 0 ? (
                <div className="col-span-full py-32 text-center bg-white rounded-[48px] border-4 border-dashed border-slate-100">
                   <Package className="h-12 w-12 text-slate-200 mx-auto mb-4" />
-                  <div className="font-black text-slate-300 uppercase tracking-widest text-xs">Inventory Currently Empty</div>
+                  <div className="font-black text-slate-300 uppercase tracking-widest text-xs">No Medicines Found</div>
                </div>
             ) : (
               filteredMedicines.map((item) => (
                 <Card key={item.id} className="group border-none bg-white rounded-[40px] shadow-soft hover:shadow-elegant transition-all duration-700 hover:-translate-y-3 overflow-hidden">
                   <div className="h-64 bg-slate-50/50 flex items-center justify-center p-12 relative overflow-hidden">
                     {item.medicines?.image_url ? (
-                      <img src={item.medicines.image_url} alt={item.medicines.name} className="h-full object-contain group-hover:scale-110 transition-transform duration-700" />
+                      <img src={item.medicines.image_url} alt={`${item.medicines.name} Online`} className="h-full object-contain group-hover:scale-110 transition-transform duration-700" />
                     ) : (
                       <Pill className="h-14 w-14 text-slate-100" />
                     )}
@@ -437,6 +490,24 @@ const Landing = () => {
             )}
           </div>
         </section>
+
+        {/* SEO Information Section */}
+        <section className="bg-slate-900 text-white rounded-[64px] p-10 md:p-20 space-y-12">
+           <div className="max-w-3xl space-y-6">
+              <h2 className="text-4xl md:text-5xl font-black tracking-tighter italic text-primary">Why Choose MediHelth for Online Medicine Delivery?</h2>
+              <p className="text-slate-400 font-medium leading-relaxed text-lg">
+                MediHelth is India's fastest growing digital health platform. We bridge the gap between patients and their local pharmacies. 
+                Whether you need life-critical medications or daily wellness products, our network of verified pharmacies ensures you get 
+                authentic medicines at your doorstep in under 30 minutes. 
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6">
+                 <div className="flex items-center gap-3"><CheckCircle2 className="text-primary h-5 w-5" /> <span>24/7 Customer Support</span></div>
+                 <div className="flex items-center gap-3"><CheckCircle2 className="text-primary h-5 w-5" /> <span>Real-time Order Tracking</span></div>
+                 <div className="flex items-center gap-3"><CheckCircle2 className="text-primary h-5 w-5" /> <span>Secure Prescription Upload</span></div>
+                 <div className="flex items-center gap-3"><CheckCircle2 className="text-primary h-5 w-5" /> <span>Direct WhatsApp Assistance</span></div>
+              </div>
+           </div>
+        </section>
       </main>
 
       {/* Footer */}
@@ -447,7 +518,7 @@ const Landing = () => {
                 <img src="/logo.png" alt="MediHelth" className="h-12 w-12 object-contain" />
                 <span className="text-3xl font-black tracking-tighter text-slate-900">MediHelth</span>
              </div>
-             <p className="text-slate-500 font-bold italic leading-relaxed">Your trusted neighborhood digital pharmacy network.</p>
+             <p className="text-slate-500 font-bold italic leading-relaxed">Connecting you to authorized pharmacies for authentic healthcare.</p>
              <div className="flex gap-4">
                 <a href="#" className="h-12 w-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 hover:text-primary transition-all shadow-soft"><Instagram className="h-5 w-5" /></a>
                 <a href="#" className="h-12 w-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 hover:text-primary transition-all shadow-soft"><Twitter className="h-5 w-5" /></a>
@@ -457,20 +528,20 @@ const Landing = () => {
           <div className="space-y-8">
              <h4 className="font-black text-[10px] uppercase tracking-[0.4em] text-primary">Company</h4>
              <ul className="space-y-4 text-slate-500 font-black text-sm">
-                <li><Link to="/auth" className="hover:text-primary transition-all">Login</Link></li>
+                <li><Link to="/auth" className="hover:text-primary transition-all">Member Login</Link></li>
                 <li><Link to="/terms" className="hover:text-primary transition-all">Terms of Use</Link></li>
                 <li><Link to="/privacy" className="hover:text-primary transition-all">Privacy Shield</Link></li>
                 <li>
                   <Dialog open={isFeedbackOpen} onOpenChange={setIsFeedbackOpen}>
                     <DialogTrigger asChild>
                       <button className="flex items-center gap-2 hover:text-primary transition-colors">
-                        <MessageSquare className="h-4 w-4" /> Give Feedback
+                        <MessageSquare className="h-4 w-4" /> Help Us Improve
                       </button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[425px] rounded-[32px]">
                       <DialogHeader>
-                        <DialogTitle className="text-2xl font-black tracking-tighter italic">Feedback</DialogTitle>
-                        <DialogDescription className="font-bold">Share your experience with MediHelth.</DialogDescription>
+                        <DialogTitle className="text-2xl font-black tracking-tighter italic">Your Feedback</DialogTitle>
+                        <DialogDescription className="font-bold">Share your thoughts on our healthcare services.</DialogDescription>
                       </DialogHeader>
                       <form onSubmit={submitFeedback} className="space-y-6 pt-4">
                         <div className="flex justify-center gap-4 py-2">
@@ -481,13 +552,13 @@ const Landing = () => {
                           ))}
                         </div>
                         <Textarea 
-                          placeholder="Your message..." 
+                          placeholder="Tell us about your experience..." 
                           className="rounded-2xl h-32"
                           value={feedback.message}
                           onChange={(e) => setFeedback({ ...feedback, message: e.target.value })}
                         />
                         <Button disabled={submitting} type="submit" className="w-full h-14 rounded-2xl bg-primary font-black">
-                          {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : "Submit Feedback"}
+                          {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : "Send Feedback"}
                         </Button>
                       </form>
                     </DialogContent>
@@ -503,18 +574,18 @@ const Landing = () => {
              </ul>
           </div>
           <div className="space-y-8">
-             <h4 className="font-black text-[10px] uppercase tracking-[0.4em] text-primary">Get App</h4>
+             <h4 className="font-black text-[10px] uppercase tracking-[0.4em] text-primary">Mobile App</h4>
              <div className="flex flex-col gap-4">
-                <Button variant="outline" className="h-14 rounded-2xl border-2 font-black">Play Store</Button>
-                <Button variant="outline" className="h-14 rounded-2xl border-2 font-black">App Store</Button>
+                <Button variant="outline" className="h-14 rounded-2xl border-2 font-black">Get it on Google Play</Button>
+                <Button variant="outline" className="h-14 rounded-2xl border-2 font-black">Download on App Store</Button>
              </div>
           </div>
         </div>
-        <div className="container mx-auto px-4 mt-24 pt-10 border-t flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-           <span>© {new Date().getFullYear()} MediHelth Technologies Pvt. Ltd.</span>
+        <div className="container mx-auto px-4 mt-24 pt-10 border-t flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center md:text-left">
+           <span>© {new Date().getFullYear()} MediHelth Technologies Pvt. Ltd. | Authentic Medicine Delivery in India</span>
            <div className="flex gap-8">
-              <span>Bhopal, India</span>
-              <span>Made with ❤️ for Health</span>
+              <span>Bhopal, MP, India</span>
+              <span>Built for Better Health</span>
            </div>
         </div>
       </footer>

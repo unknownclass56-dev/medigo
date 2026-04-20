@@ -1,6 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import { DashboardShell } from "@/components/DashboardShell";
-import { LayoutDashboard, Users, Building2, Truck, Settings, AlertCircle, Wallet } from "lucide-react";
+import { LayoutDashboard, Users, Building2, Truck, Settings, AlertCircle, Wallet, MessageSquare } from "lucide-react";
 import AdminOverview from "./AdminOverview";
 
 import AdminUsers from "./AdminUsers";
@@ -10,12 +10,14 @@ import AdminSettings from "./AdminSettings";
 import AdminComplaints from "./AdminComplaints";
 import AdminEarnings from "./AdminEarnings";
 import AdminSettlements from "./AdminSettlements";
+import AdminFeedback from "./AdminFeedback";
 
 const nav = [
   { to: "/admin", label: "Overview", icon: LayoutDashboard },
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/pharmacies", label: "Pharmacies", icon: Building2 },
   { to: "/admin/delivery", label: "Delivery", icon: Truck },
+  { to: "/admin/feedback", label: "Feedback", icon: MessageSquare },
   { to: "/admin/financials", label: "Financials", icon: Wallet },
   { to: "/admin/settlements", label: "Settlements", icon: Wallet },
   { to: "/admin/complaints", label: "Complaints", icon: AlertCircle },
@@ -31,6 +33,7 @@ const AdminHome = () => (
       <Route path="users" element={<AdminUsers />} />
       <Route path="pharmacies" element={<AdminPharmacies />} />
       <Route path="delivery" element={<AdminDelivery />} />
+      <Route path="feedback" element={<AdminFeedback />} />
       <Route path="financials" element={<AdminEarnings />} />
       <Route path="settlements" element={<AdminSettlements />} />
       <Route path="complaints" element={<AdminComplaints />} />
@@ -41,6 +44,3 @@ const AdminHome = () => (
 );
 
 export default AdminHome;
-
-
-

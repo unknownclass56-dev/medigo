@@ -1,4 +1,4 @@
-﻿
+
 -- =========================================================
 -- HYPERLOCAL MEDICINE DELIVERY â€” FOUNDATION SCHEMA
 -- =========================================================
@@ -494,6 +494,18 @@ BEGIN
 
   INSERT INTO public.user_roles (user_id, role)
   VALUES (NEW.id, COALESCE((NEW.raw_user_meta_data->>'role')::app_role, 'customer'));
+
+  -- Auto-create delivery partner record if role is delivery_partner
+  IF (NEW.raw_user_meta_data->>'role') = 'delivery_partner' THEN
+    INSERT INTO public.delivery_partners (user_id, is_online, approved)
+    VALUES (NEW.id, false, false);
+  END IF;
+
+  -- Auto-create draft pharmacy record if role is pharmacy_owner
+  IF (NEW.raw_user_meta_data->>'role') = 'pharmacy_owner' THEN
+    INSERT INTO public.pharmacies (owner_id, name, address, lat, lng, status)
+    VALUES (NEW.id, 'My Pharmacy (Draft)', 'Update Address', 0, 0, 'pending');
+  END IF;
 
   RETURN NEW;
 END; $$;
