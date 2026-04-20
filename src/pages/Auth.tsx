@@ -181,12 +181,11 @@ const AuthPage = () => {
                 <form onSubmit={handleSignUp} className="mt-4 space-y-4">
                   <div className="space-y-2">
                     <Label>I am a</Label>
-                    <RadioGroup value={signUp.role} onValueChange={(v) => setSignUp({ ...signUp, role: v as AppRole })} className="grid grid-cols-4 gap-2">
+                    <RadioGroup value={signUp.role} onValueChange={(v) => setSignUp({ ...signUp, role: v as AppRole })} className="grid grid-cols-3 gap-2">
                       {[
                         { v: "customer", l: "Customer" },
                         { v: "pharmacy_owner", l: "Pharmacy" },
                         { v: "delivery_partner", l: "Delivery" },
-                        { v: "admin", l: "Admin" },
                       ].map((o) => (
                         <Label
                           key={o.v}

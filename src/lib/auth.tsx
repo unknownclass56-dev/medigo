@@ -76,5 +76,6 @@ export const primaryRoleRoute = (roles: AppRole[]): string => {
   if (roles.includes("admin")) return "/admin";
   if (roles.includes("pharmacy_owner")) return "/pharmacy";
   if (roles.includes("delivery_partner")) return "/delivery";
-  return "/app";
+  if (roles.includes("customer")) return "/app";
+  return "/auth"; // Return to auth if no roles found to avoid infinite loops
 };
