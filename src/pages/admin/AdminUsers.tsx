@@ -155,9 +155,18 @@ const AdminUsers = () => {
 
   const updateRoleMutation = useMutation({
     mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
-      await supabase.from("user_roles").delete().eq("user_id", userId);
-      const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
-      if (error) throw error;
+      // Check if the role already exists
+      const { data: existing } = await supabase.from("user_roles").select("id").eq("user_id", userId).eq("role", role);
+      
+      // Insert the new role FIRST to avoid losing admin privileges if modifying oneself
+      if (!existing || existing.length === 0) {
+        const { error: insertError } = await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
+        if (insertError) throw insertError;
+      }
+
+      // Then remove any other roles the user might have
+      const { error: deleteError } = await supabase.from("user_roles").delete().eq("user_id", userId).neq("role", role);
+      if (deleteError) throw deleteError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
