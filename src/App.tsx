@@ -28,7 +28,8 @@ import DeliveryKyc from "./pages/delivery/DeliveryKyc.tsx";
 import DeliveryProfile from "./pages/delivery/DeliveryProfile.tsx";
 import AdminHome from "./pages/admin/AdminHome.tsx";
 import NotFound from "./pages/NotFound.tsx";
-import { TermsOfService, PrivacyPolicy, RefundPolicy } from "./pages/Policies.tsx";
+import { TermsOfService, PrivacyPolicy, RefundPolicy, AccessibilityPolicy } from "./pages/Policies.tsx";
+import Sitemap from "./pages/Sitemap.tsx";
 
 const queryClient = new QueryClient();
 
@@ -83,6 +84,8 @@ const App = () => (
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/refund" element={<RefundPolicy />} />
+            <Route path="/accessibility" element={<AccessibilityPolicy />} />
+            <Route path="/sitemap" element={<Sitemap />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </CartProvider>

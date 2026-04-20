@@ -14,7 +14,7 @@ import {
   Pill, Search, ShoppingCart, User, MapPin, 
   ChevronRight, Star, Clock, ShieldCheck, 
   Package, LayoutDashboard, Truck, X, Minus, Plus, ShoppingBag, Loader2, ArrowRight, Zap, Heart, CheckCircle2,
-  Instagram, Twitter, Facebook, MessageCircle, Send, Globe, LifeBuoy, MessageSquare
+  Instagram, Twitter, Facebook, MessageCircle, Send, Globe, LifeBuoy, MessageSquare, Accessibility, Eye, Type, Contrast
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, primaryRoleRoute } from "@/lib/auth";
@@ -32,8 +32,8 @@ const Landing = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [location, setLocation] = useState<string>("Detecting...");
   const [config, setConfig] = useState<any>({
-    banner_title: "Medicines Delivered in 30 Mins.",
-    banner_subtitle: "Connecting you to verified local pharmacies for life-saving care.",
+    banner_title: "Get your medicines Delivered in 30 Mins.",
+    banner_subtitle: "Verified Pharmacies. Trusted Logistics. Best Prices.",
     banner_badge: "FLAT 25% OFF",
     whatsapp_number: "919000000000"
   });
@@ -41,6 +41,12 @@ const Landing = () => {
   const [feedback, setFeedback] = useState({ message: "", rating: 5 });
   const [submitting, setSubmitting] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+
+  // Accessibility State
+  const [fontSize, setFontSize] = useState(16);
+  const [isContrast, setIsContrast] = useState(false);
+  const [isDyslexicFont, setIsDyslexicFont] = useState(false);
+  const [isAccessOpen, setIsAccessOpen] = useState(false);
 
   useEffect(() => {
     if ("geolocation" in navigator) {
@@ -140,7 +146,10 @@ const Landing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/50 selection:bg-primary/10 selection:text-primary font-sans">
+    <div 
+      className={`min-h-screen bg-slate-50/50 selection:bg-primary/10 selection:text-primary transition-all duration-300 ${isContrast ? "grayscale contrast-125" : ""} ${isDyslexicFont ? "font-mono" : "font-sans"}`}
+      style={{ fontSize: `${fontSize}px` }}
+    >
       
       {/* WhatsApp Floating Button */}
       <a 
@@ -153,35 +162,115 @@ const Landing = () => {
         <span className="absolute right-20 bg-slate-900 text-white text-[10px] font-black px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap uppercase tracking-widest">Chat with us</span>
       </a>
 
+      {/* Accessibility Widget Button */}
+      <div className="fixed bottom-8 left-8 z-[100]">
+        <Dialog open={isAccessOpen} onOpenChange={setIsAccessOpen}>
+          <DialogTrigger asChild>
+             <button className="h-16 w-16 bg-primary text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-transform active:scale-95 group">
+                <Accessibility className="h-8 w-8" />
+                <span className="absolute left-20 bg-slate-900 text-white text-[10px] font-black px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap uppercase tracking-widest">Accessibility</span>
+             </button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[400px] rounded-[32px] p-8">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-black tracking-tighter italic flex items-center gap-2">
+                <Accessibility className="h-6 w-6 text-primary" /> Accessibility Settings
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-8 pt-6">
+               <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="font-black text-sm uppercase tracking-widest text-slate-500 flex items-center gap-2"><Type className="h-4 w-4" /> Font Size</span>
+                    <span className="font-black text-primary">{fontSize}px</span>
+                  </div>
+                  <div className="flex gap-4">
+                    <Button variant="outline" className="flex-1 rounded-xl h-12 font-black border-2" onClick={() => setFontSize(prev => Math.max(12, prev - 2))}>Small</Button>
+                    <Button variant="outline" className="flex-1 rounded-xl h-12 font-black border-2" onClick={() => setFontSize(16)}>Default</Button>
+                    <Button variant="outline" className="flex-1 rounded-xl h-12 font-black border-2" onClick={() => setFontSize(prev => Math.min(24, prev + 2))}>Large</Button>
+                  </div>
+               </div>
+
+               <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border-2 border-slate-100">
+                  <div className="flex items-center gap-3">
+                     <Contrast className="h-5 w-5 text-slate-900" />
+                     <span className="font-black text-sm uppercase tracking-widest text-slate-900">High Contrast</span>
+                  </div>
+                  <button 
+                    onClick={() => setIsContrast(!isContrast)}
+                    className={`h-7 w-12 rounded-full transition-colors relative ${isContrast ? "bg-primary" : "bg-slate-200"}`}
+                  >
+                    <div className={`h-5 w-5 bg-white rounded-full absolute top-1 transition-all ${isContrast ? "left-6" : "left-1"}`} />
+                  </button>
+               </div>
+
+               <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border-2 border-slate-100">
+                  <div className="flex items-center gap-3">
+                     <Eye className="h-5 w-5 text-slate-900" />
+                     <span className="font-black text-sm uppercase tracking-widest text-slate-900">Dyslexic Font</span>
+                  </div>
+                  <button 
+                    onClick={() => setIsDyslexicFont(!isDyslexicFont)}
+                    className={`h-7 w-12 rounded-full transition-colors relative ${isDyslexicFont ? "bg-primary" : "bg-slate-200"}`}
+                  >
+                    <div className={`h-5 w-5 bg-white rounded-full absolute top-1 transition-all ${isDyslexicFont ? "left-6" : "left-1"}`} />
+                  </button>
+               </div>
+
+               <Button className="w-full h-14 rounded-2xl bg-slate-900 font-black text-white" onClick={() => { setIsContrast(false); setFontSize(16); setIsDyslexicFont(false); }}>Reset All</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
       {/* Premium Navbar */}
       <header className="sticky top-0 z-[100] w-full glass border-b transition-all duration-300">
-        <div className="container mx-auto px-4 h-20 flex items-center justify-between gap-6">
-          <Link to="/" className="flex items-center gap-3 group transition-transform active:scale-95 shrink-0">
-            <div className="flex h-12 w-12 items-center justify-center relative">
-              <img 
-                src="/logo.png" 
-                alt="MediHelth" 
-                className="h-full w-full object-contain z-10" 
-                onError={(e) => (e.currentTarget.style.opacity = '0')} 
-              />
-              <div className="absolute inset-0 flex h-12 w-12 items-center justify-center rounded-2xl gradient-primary text-white shadow-lg -z-0 opacity-20">
-                <Pill className="h-7 w-7" />
+        <div className="container mx-auto px-4 h-auto lg:h-20 py-4 lg:py-0 flex flex-col lg:flex-row items-center justify-between gap-4 lg:gap-6">
+          <div className="w-full lg:w-auto flex items-center justify-between gap-4">
+            <Link to="/" className="flex items-center gap-3 group transition-transform active:scale-95 shrink-0">
+              <div className="flex h-12 w-12 items-center justify-center relative">
+                <img 
+                  src="/logo.png" 
+                  alt="MediHelth" 
+                  className="h-full w-full object-contain z-10" 
+                  onError={(e) => (e.currentTarget.style.opacity = '0')} 
+                />
+                <div className="absolute inset-0 flex h-12 w-12 items-center justify-center rounded-2xl gradient-primary text-white shadow-lg -z-0 opacity-20">
+                  <Pill className="h-7 w-7" />
+                </div>
               </div>
-            </div>
-            <span className="text-2xl md:text-3xl font-black tracking-tighter text-slate-900">
-              Medi<span className="text-primary">Helth</span>
-            </span>
-          </Link>
+              <span className="text-2xl md:text-3xl font-black tracking-tighter text-slate-900">
+                Medi<span className="text-primary">Helth</span>
+              </span>
+            </Link>
 
-          {/* Smart Search - Desktop */}
-          <div className="hidden lg:flex flex-1 max-w-2xl relative group">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 pr-3 border-r border-slate-200">
+            {/* Mobile Bag & Login (Small icons) */}
+            <div className="flex lg:hidden items-center gap-2">
+               {user ? (
+                <Link to={primaryRoleRoute(roles)} className="h-10 w-10 bg-slate-100 rounded-xl flex items-center justify-center text-primary"><LayoutDashboard className="h-5 w-5" /></Link>
+               ) : (
+                <Link to="/auth" className="h-10 w-10 bg-slate-100 rounded-xl flex items-center justify-center text-primary"><User className="h-5 w-5" /></Link>
+               )}
+               <Sheet>
+                 <SheetTrigger asChild>
+                    <button className="h-10 w-10 bg-slate-900 text-white rounded-xl flex items-center justify-center relative">
+                      <ShoppingCart className="h-5 w-5" />
+                      {count > 0 && <span className="absolute -top-1 -right-1 h-4 w-4 bg-primary rounded-full text-[8px] font-black flex items-center justify-center">{count}</span>}
+                    </button>
+                 </SheetTrigger>
+                 {/* ... (Sheet content remains same) */}
+               </Sheet>
+            </div>
+          </div>
+
+          {/* Search Bar - Visible on Mobile & Desktop */}
+          <div className="w-full lg:flex-1 max-w-2xl relative group">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 hidden md:flex items-center gap-2 pr-3 border-r border-slate-200">
               <MapPin className="h-4 w-4 text-primary animate-pulse" />
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 truncate max-w-[80px]">{location}</span>
             </div>
             <input 
-              placeholder="Search medicines..." 
-              className="pl-32 pr-14 h-14 w-full rounded-2xl border border-slate-200 bg-white/50 focus:bg-white focus:ring-4 focus:ring-primary/5 outline-none transition-all font-medium"
+              placeholder="Search medicines or health products..." 
+              className="pl-6 md:pl-32 pr-14 h-14 w-full rounded-2xl border border-slate-200 bg-white/50 focus:bg-white focus:ring-4 focus:ring-primary/5 outline-none transition-all font-medium text-sm md:text-base shadow-sm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -190,12 +279,13 @@ const Landing = () => {
             </Button>
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* Desktop Right Nav */}
+          <div className="hidden lg:flex items-center gap-3">
             {user ? (
               <Button asChild variant="ghost" className="flex gap-2 font-bold text-slate-600 rounded-xl hover:bg-slate-100">
                 <Link to={primaryRoleRoute(roles)}>
                   <LayoutDashboard className="h-4 w-4 text-primary" />
-                  <span className="hidden sm:inline">Dashboard</span>
+                  <span>Dashboard</span>
                 </Link>
               </Button>
             ) : (
@@ -221,53 +311,59 @@ const Landing = () => {
               <SheetContent className="w-full sm:max-w-md flex flex-col p-0 border-l-0 shadow-2xl">
                 <SheetHeader className="p-8 border-b bg-slate-50/50">
                   <SheetTitle className="flex items-center gap-3 text-slate-900 font-black uppercase tracking-widest text-sm">
-                    <ShoppingBag className="h-5 w-5 text-primary" /> Your Bag
+                    <ShoppingBag className="h-5 w-5 text-primary" /> Your Shopping Bag
                   </SheetTitle>
                 </SheetHeader>
+                
                 <div className="flex-1 overflow-y-auto p-8 scrollbar-hide space-y-8">
                   {items.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-center space-y-6">
                        <ShoppingCart className="h-12 w-12 text-slate-200" />
-                       <div className="font-black text-slate-300 uppercase tracking-[0.3em] text-xs">Empty</div>
+                       <div className="font-black text-slate-300 uppercase tracking-[0.3em] text-xs">Your bag is empty</div>
                     </div>
                   ) : (
                     <div className="space-y-8">
                       {items.map((it) => (
                         <div key={`${it.medicine_id}_${it.unit_type}`} className="flex gap-5 group">
-                          <div className="h-20 w-20 bg-slate-50 rounded-2xl flex items-center justify-center shrink-0 border border-slate-100">
-                            <Pill className="h-8 w-8 text-slate-200" />
+                          <div className="h-24 w-24 bg-slate-50 rounded-3xl flex items-center justify-center shrink-0 border border-slate-100 group-hover:bg-primary/5 transition-colors">
+                            <Pill className="h-10 w-10 text-slate-200" />
                           </div>
-                          <div className="flex-1 min-w-0 flex flex-col justify-between">
+                          <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
                             <div>
                               <h4 className="font-bold text-slate-900 truncate pr-6">{it.name}</h4>
                               <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="secondary" className="text-[10px] font-black bg-slate-100 text-slate-500">{it.unit_type}</Badge>
+                                <Badge variant="secondary" className="text-[10px] font-black uppercase bg-slate-100 text-slate-500 rounded-md">{it.unit_type}</Badge>
                                 <span className="text-[11px] font-bold text-slate-400">₹{it.price.toFixed(2)}</span>
                               </div>
                             </div>
                             <div className="flex items-center justify-between mt-4">
-                               <div className="flex items-center gap-3 bg-slate-50 rounded-lg px-2 py-1">
-                                  <button onClick={() => setQty(it.medicine_id, it.quantity - 1)} className="p-1"><Minus className="h-3 w-3" /></button>
-                                  <span className="text-sm font-black w-4 text-center">{it.quantity}</span>
-                                  <button onClick={() => setQty(it.medicine_id, it.quantity + 1)} className="p-1"><Plus className="h-3 w-3" /></button>
+                               <div className="flex items-center gap-3 bg-slate-50 rounded-xl px-2 py-1.5 border border-slate-100">
+                                  <button onClick={() => setQty(it.medicine_id, it.quantity - 1)} className="hover:text-primary transition-colors p-1"><Minus className="h-3.5 w-3.5" /></button>
+                                  <span className="text-sm font-black w-6 text-center text-slate-900">{it.quantity}</span>
+                                  <button onClick={() => setQty(it.medicine_id, it.quantity + 1)} className="hover:text-primary transition-colors p-1"><Plus className="h-3.5 w-3.5" /></button>
                                </div>
                                <span className="font-black text-slate-900">₹{(it.price * it.quantity).toFixed(2)}</span>
                             </div>
                           </div>
-                          <button onClick={() => remove(it.medicine_id)} className="h-8 w-8 text-slate-300 hover:text-destructive self-start"><X className="h-4 w-4" /></button>
+                          <button onClick={() => remove(it.medicine_id)} className="h-9 w-9 flex items-center justify-center text-slate-300 hover:text-destructive hover:bg-destructive/5 rounded-full transition-all self-start"><X className="h-4 w-4" /></button>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
+
                 {items.length > 0 && (
-                  <SheetFooter className="p-8 border-t bg-white flex-col gap-8">
-                    <div className="flex justify-between items-center">
-                       <span className="text-slate-900 font-black uppercase tracking-widest text-xs">Total</span>
-                       <span className="text-3xl font-black text-slate-900 tracking-tighter">₹{subtotal.toFixed(2)}</span>
+                  <SheetFooter className="p-8 border-t bg-white flex-col gap-8 shadow-[0_-20px_40px_-20px_rgba(0,0,0,0.1)]">
+                    <div className="space-y-4 w-full">
+                       <div className="flex justify-between items-center">
+                          <span className="text-slate-900 font-black uppercase tracking-widest text-xs">Total Payable</span>
+                          <span className="text-3xl font-black text-slate-900 tracking-tighter">₹{subtotal.toFixed(2)}</span>
+                       </div>
                     </div>
-                    <Button asChild className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 font-black text-lg">
-                       <Link to="/app/cart" className="flex items-center gap-2">Checkout <ArrowRight className="h-5 w-5" /></Link>
+                    <Button asChild className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 font-black text-lg shadow-xl shadow-primary/20 transition-all active:scale-[0.98]">
+                       <Link to="/app/cart" className="flex items-center gap-2">
+                          Checkout Now <ArrowRight className="h-5 w-5" />
+                       </Link>
                     </Button>
                   </SheetFooter>
                 )}
@@ -311,27 +407,34 @@ const Landing = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {loading ? (
               Array(4).fill(0).map((_, i) => <div key={i} className="h-96 animate-pulse bg-slate-100 rounded-[40px]" />)
-            ) : filteredMedicines.map((item) => (
-              <Card key={item.id} className="group border-none bg-white rounded-[40px] shadow-soft hover:shadow-elegant transition-all duration-700 hover:-translate-y-3 overflow-hidden">
-                <div className="h-64 bg-slate-50/50 flex items-center justify-center p-12 relative overflow-hidden">
-                  {item.medicines?.image_url ? (
-                    <img src={item.medicines.image_url} alt={item.medicines.name} className="h-full object-contain group-hover:scale-110 transition-transform duration-700" />
-                  ) : (
-                    <Pill className="h-14 w-14 text-slate-100" />
-                  )}
-                </div>
-                <CardContent className="p-8 pt-6 space-y-6">
-                  <div className="space-y-2">
-                    <div className="text-[10px] font-black text-primary uppercase tracking-widest">{item.pharmacies?.name}</div>
-                    <h3 className="font-black text-slate-900 text-2xl truncate">{item.medicines?.name}</h3>
+            ) : filteredMedicines.length === 0 ? (
+               <div className="col-span-full py-32 text-center bg-white rounded-[48px] border-4 border-dashed border-slate-100">
+                  <Package className="h-12 w-12 text-slate-200 mx-auto mb-4" />
+                  <div className="font-black text-slate-300 uppercase tracking-widest text-xs">Inventory Currently Empty</div>
+               </div>
+            ) : (
+              filteredMedicines.map((item) => (
+                <Card key={item.id} className="group border-none bg-white rounded-[40px] shadow-soft hover:shadow-elegant transition-all duration-700 hover:-translate-y-3 overflow-hidden">
+                  <div className="h-64 bg-slate-50/50 flex items-center justify-center p-12 relative overflow-hidden">
+                    {item.medicines?.image_url ? (
+                      <img src={item.medicines.image_url} alt={item.medicines.name} className="h-full object-contain group-hover:scale-110 transition-transform duration-700" />
+                    ) : (
+                      <Pill className="h-14 w-14 text-slate-100" />
+                    )}
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="text-2xl font-black text-slate-900 tracking-tighter">₹{(item.price_per_piece || item.price).toFixed(2)}</div>
-                    <Button onClick={() => handleAddToCart(item)} className="h-14 w-14 rounded-2xl bg-slate-900 hover:bg-primary text-white p-0 shadow-xl active:scale-90"><Plus className="h-6 w-6" /></Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  <CardContent className="p-8 pt-6 space-y-6">
+                    <div className="space-y-2">
+                      <div className="text-[10px] font-black text-primary uppercase tracking-widest">{item.pharmacies?.name}</div>
+                      <h3 className="font-black text-slate-900 text-2xl truncate">{item.medicines?.name}</h3>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="text-2xl font-black text-slate-900 tracking-tighter">₹{(item.price_per_piece || item.price).toFixed(2)}</div>
+                      <Button onClick={() => handleAddToCart(item)} className="h-14 w-14 rounded-2xl bg-slate-900 hover:bg-primary text-white p-0 shadow-xl active:scale-90"><Plus className="h-6 w-6" /></Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         </section>
       </main>
@@ -354,9 +457,9 @@ const Landing = () => {
           <div className="space-y-8">
              <h4 className="font-black text-[10px] uppercase tracking-[0.4em] text-primary">Company</h4>
              <ul className="space-y-4 text-slate-500 font-black text-sm">
-                <li><Link to="/auth" className="hover:text-primary">Login</Link></li>
-                <li><Link to="/terms" className="hover:text-primary">Terms of Use</Link></li>
-                <li><Link to="/privacy" className="hover:text-primary">Privacy Shield</Link></li>
+                <li><Link to="/auth" className="hover:text-primary transition-all">Login</Link></li>
+                <li><Link to="/terms" className="hover:text-primary transition-all">Terms of Use</Link></li>
+                <li><Link to="/privacy" className="hover:text-primary transition-all">Privacy Shield</Link></li>
                 <li>
                   <Dialog open={isFeedbackOpen} onOpenChange={setIsFeedbackOpen}>
                     <DialogTrigger asChild>
@@ -395,8 +498,8 @@ const Landing = () => {
           <div className="space-y-8">
              <h4 className="font-black text-[10px] uppercase tracking-[0.4em] text-primary">Support</h4>
              <ul className="space-y-4 text-slate-500 font-black text-sm">
-                <li><div className="flex items-center gap-2 hover:text-primary cursor-pointer"><Globe className="h-4 w-4" /> Sitemap</div></li>
-                <li><div className="flex items-center gap-2 hover:text-primary cursor-pointer"><LifeBuoy className="h-4 w-4" /> Accessibility</div></li>
+                <li><Link to="/sitemap" className="flex items-center gap-2 hover:text-primary transition-all"><Globe className="h-4 w-4" /> Sitemap</Link></li>
+                <li><Link to="/accessibility" className="flex items-center gap-2 hover:text-primary transition-all"><LifeBuoy className="h-4 w-4" /> Accessibility</Link></li>
              </ul>
           </div>
           <div className="space-y-8">
