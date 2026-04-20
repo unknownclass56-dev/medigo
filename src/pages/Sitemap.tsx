@@ -43,14 +43,14 @@ const Sitemap = () => {
           <div className="h-10 w-10 bg-primary rounded-xl flex items-center justify-center text-white">
             <Pill className="h-6 w-6" />
           </div>
-          <span className="text-2xl font-black tracking-tighter text-slate-900">MediHelth</span>
+          <span className="text-2xl font-black tracking-tighter text-slate-900">MediHealth</span>
         </Link>
       </header>
 
       <main className="container mx-auto px-4 py-16 max-w-5xl space-y-16">
         <div className="space-y-4">
           <h1 className="text-5xl font-black text-slate-900 tracking-tighter italic">Sitemap</h1>
-          <p className="text-slate-500 font-bold text-lg">Detailed structure of the MediHelth digital ecosystem.</p>
+          <p className="text-slate-500 font-bold text-lg">Detailed structure of the MediHealth digital ecosystem.</p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-12">
@@ -79,7 +79,7 @@ const Sitemap = () => {
 
       {/* Footer */}
       <footer className="py-10 border-t text-center text-[10px] font-black text-slate-400 uppercase tracking-widest bg-white">
-         © {new Date().getFullYear()} MediHelth Technologies. All rights reserved.
+         © {new Date().getFullYear()} MediHealth Technologies. All rights reserved.
       </footer>
     </div>
   );

@@ -37,7 +37,7 @@ export const DashboardShell = ({ brand, nav, children }: Props) => {
             <Pill className="h-4 w-4" />
           </div>
           <div>
-            <div className="text-sm font-bold leading-tight">MediHelth</div>
+            <div className="text-sm font-bold leading-tight">MediHealth</div>
             <div className="text-xs text-muted-foreground">{brand}</div>
           </div>
         </div>
@@ -81,7 +81,7 @@ export const DashboardShell = ({ brand, nav, children }: Props) => {
             <div className="flex h-7 w-7 items-center justify-center rounded-md gradient-primary text-primary-foreground">
               <Pill className="h-3.5 w-3.5" />
             </div>
-            <span className="font-bold">MediHelth</span>
+            <span className="font-bold">MediHealth</span>
             <span className="text-xs text-muted-foreground">· {brand}</span>
           </div>
           <Button variant="ghost" size="sm" onClick={handleSignOut}>

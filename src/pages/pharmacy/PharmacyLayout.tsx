@@ -54,7 +54,7 @@ const PharmacyLayout = () => {
   }
 
   return (
-    <DashboardShell brand="MediHelth Pharmacy" nav={nav}>
+    <DashboardShell brand="MediHealth Pharmacy" nav={nav}>
       {!isApproved && !isKycPage && (
         <Alert variant="destructive" className="mb-6 border-2">
           <AlertCircle className="h-4 w-4" />

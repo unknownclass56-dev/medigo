@@ -125,6 +125,14 @@ const Landing = () => {
     );
   }, [searchQuery, medicines]);
 
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      navigate(`/app/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      navigate('/app/search');
+    }
+  };
+
   const handleAddToCart = (item: any) => {
     if (!user) {
       toast({ title: "Login Required", description: "Please sign in to add items." });
@@ -170,11 +178,11 @@ const Landing = () => {
   const schemaData = {
     "@context": "https://schema.org",
     "@type": "MedicalBusiness",
-    "name": "MediHelth",
-    "alternateName": "MediHelth Pharmacy Network",
+    "name": "MediHealth",
+    "alternateName": "MediHealth Pharmacy Network",
     "url": window.location.origin,
     "logo": `${window.location.origin}/logo.png`,
-    "description": "MediHelth is India's premium digital pharmacy network providing 30-minute medicine delivery from verified local pharmacies.",
+    "description": "MediHealth is India's premium digital pharmacy network providing 30-minute medicine delivery from verified local pharmacies.",
     "address": {
       "@type": "PostalAddress",
       "addressLocality": "Bhopal",
@@ -194,14 +202,14 @@ const Landing = () => {
       style={{ fontSize: `${fontSize}px` }}
     >
       <Helmet>
-        <title>MediHelth | 30-Min Medicine Delivery from Verified Pharmacies</title>
-        <meta name="description" content="Order medicines online from MediHelth and get 30-minute delivery from verified local pharmacies. Best prices, authentic healthcare, and trusted logistics in Bhopal, India." />
-        <meta name="keywords" content="online pharmacy, medicine delivery, 30 min delivery, authentic medicine, health tech, pharmacy network, Bhopal medicines, MediHelth" />
+        <title>MediHealth | 30-Min Medicine Delivery from Verified Pharmacies</title>
+        <meta name="description" content="Order medicines online from MediHealth and get 30-minute delivery from verified local pharmacies. Best prices, authentic healthcare, and trusted logistics in Bhopal, India." />
+        <meta name="keywords" content="online pharmacy, medicine delivery, 30 min delivery, authentic medicine, health tech, pharmacy network, Bhopal medicines, MediHealth" />
         
         {/* OpenGraph / Facebook */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content={window.location.origin} />
-        <meta property="og:title" content="MediHelth | Fastest Medicine Delivery" />
+        <meta property="og:title" content="MediHealth | Fastest Medicine Delivery" />
         <meta property="og:description" content="Get authentic medicines delivered in 30 minutes from your neighborhood pharmacy." />
         <meta property="og:image" content={`${window.location.origin}/logo.png`} />
 
@@ -212,7 +220,7 @@ const Landing = () => {
 
       {/* WhatsApp Floating Button */}
       <a 
-        href={`https://wa.me/${config.whatsapp_number}?text=Hello%20MediHelth%2C%20I%20have%20a%20query%20regarding%20my%20order.`}
+        href={`https://wa.me/${config.whatsapp_number}?text=Hello%20MediHealth%2C%20I%20have%20a%20query%20regarding%20my%20order.`}
         target="_blank" 
         rel="noopener noreferrer"
         className="fixed bottom-6 right-6 z-[100] h-14 w-14 md:h-16 md:w-16 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-transform active:scale-95 group"
@@ -271,7 +279,7 @@ const Landing = () => {
           <div className="w-full lg:w-auto flex items-center justify-between gap-4">
             <Link to="/" className="flex items-center gap-2 group transition-transform active:scale-95 shrink-0">
               <div className="flex h-10 w-10 items-center justify-center relative">
-                <img src="/logo.png" alt="MediHelth" className="h-full w-full object-contain z-10" />
+                <img src="/logo.png" alt="MediHealth" className="h-full w-full object-contain z-10" />
                 <div className="absolute inset-0 flex h-10 w-10 items-center justify-center rounded-xl gradient-primary text-white shadow-lg -z-0 opacity-20"><Pill className="h-5 w-5" /></div>
               </div>
               <span className="text-xl font-black tracking-tighter text-slate-900">
@@ -307,7 +315,10 @@ const Landing = () => {
               }}
               onFocus={() => setShowSuggestions(true)}
             />
-            <Button className="absolute right-1 top-1 h-9 w-9 rounded-lg bg-slate-900 hover:bg-primary text-white p-0">
+            <Button 
+              onClick={handleSearch}
+              className="absolute right-1 top-1 h-9 w-9 rounded-lg bg-slate-900 hover:bg-primary text-white p-0"
+            >
               <Search className="h-4 w-4" />
             </Button>
 
@@ -412,7 +423,13 @@ const Landing = () => {
               <Badge className="bg-white/5 text-white border-white/10 text-[8px] md:text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">{config.banner_badge}</Badge>
               <h1 className="text-4xl md:text-7xl font-black text-white leading-[0.9] tracking-tighter italic">{config.banner_title}</h1>
               <p className="text-slate-400 font-bold text-base md:text-xl leading-relaxed max-w-sm mx-auto md:mx-0">{config.banner_subtitle}</p>
-              <Button size="lg" className="bg-white text-slate-900 hover:bg-primary hover:text-white font-black rounded-xl h-12 md:h-14 px-8 text-sm md:text-base shadow-2xl transition-all">Order Now <ArrowRight className="ml-2 h-4 w-4" /></Button>
+              <Button 
+                size="lg" 
+                onClick={() => navigate('/app/search')}
+                className="bg-white text-slate-900 hover:bg-primary hover:text-white font-black rounded-xl h-12 md:h-14 px-8 text-sm md:text-base shadow-2xl transition-all"
+              >
+                Order Now <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
             </div>
             <div className="flex-1 relative hidden lg:flex justify-end">
               <div className="animate-float relative">
@@ -494,7 +511,7 @@ const Landing = () => {
            <div className="max-w-2xl space-y-4 md:space-y-6">
               <h2 className="text-2xl md:text-5xl font-black tracking-tighter italic text-primary leading-tight">Fastest Medicine Delivery in your City.</h2>
               <p className="text-slate-400 font-medium leading-relaxed text-sm md:text-lg">
-                MediHelth bridges the gap between patients and local verified pharmacies. Get authentic medicines at your doorstep in under 30 minutes.
+                MediHealth bridges the gap between patients and local verified pharmacies. Get authentic medicines at your doorstep in under 30 minutes.
               </p>
               <div className="grid grid-cols-2 gap-4 pt-4 text-[10px] md:text-sm font-bold">
                  <div className="flex items-center gap-2"><CheckCircle2 className="text-primary h-4 w-4" /> <span>24/7 Support</span></div>
@@ -509,8 +526,8 @@ const Landing = () => {
         <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-10 md:gap-16">
           <div className="space-y-6">
              <div className="flex items-center gap-3">
-                <img src="/logo.png" alt="MediHelth" className="h-10 w-10 object-contain" />
-                <span className="text-2xl font-black tracking-tighter text-slate-900">MediHelth</span>
+                <img src="/logo.png" alt="MediHealth" className="h-10 w-10 object-contain" />
+                <span className="text-2xl font-black tracking-tighter text-slate-900">MediHealth</span>
              </div>
              <p className="text-slate-500 font-bold italic leading-relaxed text-xs">Connecting you to authorized pharmacies for authentic healthcare.</p>
              <div className="flex gap-3">
@@ -569,7 +586,7 @@ const Landing = () => {
           </div>
         </div>
         <div className="container mx-auto px-4 mt-16 pt-8 border-t flex flex-col md:flex-row justify-between items-center gap-4 text-[8px] font-black text-slate-400 uppercase tracking-widest text-center">
-           <span>© {new Date().getFullYear()} MediHelth Technologies | Authentic Medicine Delivery</span>
+           <span>© {new Date().getFullYear()} MediHealth Technologies | Authentic Medicine Delivery</span>
            <div className="flex gap-4">
               <span>Bhopal, India</span>
               <span>Better Health</span>

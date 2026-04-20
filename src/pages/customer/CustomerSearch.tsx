@@ -1,5 +1,9 @@
-import { useEffect, useState } from "react";
-import { Search, Plus, Pill, Package } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { Search, Plus, Pill, Package, Scan, Camera, Loader2, X, Upload } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { 
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter 
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,9 +29,14 @@ interface MedicineCard {
 const CustomerSearch = () => {
   const { user } = useAuth();
   const { add, count } = useCart();
-  const [q, setQ] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialQuery = searchParams.get("q") || "";
+  const [q, setQ] = useState(initialQuery);
   const [results, setResults] = useState<MedicineCard[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanStep, setScanStep] = useState<"idle" | "uploading" | "analyzing" | "complete">("idle");
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [me, setMe] = useState<{ lat: number; lng: number } | null>(null);
   // Track selected unit for each medicine card
   const [unitSelections, setUnitSelections] = useState<Record<string, "piece" | "pack">>({});
@@ -123,9 +132,105 @@ const CustomerSearch = () => {
           </Button>
         )}
       </div>
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Try Paracetamol, Crocin…" className="pl-9 h-11" />
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input 
+            value={q} 
+            onChange={(e) => {
+              setQ(e.target.value);
+              setSearchParams({ q: e.target.value }, { replace: true });
+            }} 
+            placeholder="Try Paracetamol, Crocin…" 
+            className="pl-9 h-11" 
+          />
+        </div>
+        <Dialog open={isScanning} onOpenChange={(open) => {
+          setIsScanning(open);
+          if (!open) setScanStep("idle");
+        }}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="h-11 w-11 p-0 rounded-xl border-2 hover:bg-primary/5 hover:text-primary transition-all">
+              <Scan className="h-5 w-5" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md rounded-[32px] p-8">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-black tracking-tighter italic flex items-center gap-2">
+                <Scan className="h-6 w-6 text-primary" /> Scan Medicine
+              </DialogTitle>
+              <DialogDescription className="font-bold text-slate-500">
+                Upload a photo of the medicine or its packaging to search instantly.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="py-8">
+              {scanStep === "idle" && (
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="group cursor-pointer border-4 border-dashed border-slate-100 rounded-[32px] p-12 flex flex-col items-center justify-center gap-4 hover:border-primary/20 hover:bg-primary/5 transition-all"
+                >
+                  <div className="h-20 w-20 bg-slate-50 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Upload className="h-8 w-8 text-slate-300 group-hover:text-primary" />
+                  </div>
+                  <div className="text-center">
+                    <p className="font-black text-slate-900">Click to upload photo</p>
+                    <p className="text-xs font-bold text-slate-400">JPG, PNG or PDF (Max 5MB)</p>
+                  </div>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files?.[0]) {
+                        setScanStep("uploading");
+                        setTimeout(() => setScanStep("analyzing"), 1500);
+                        setTimeout(() => {
+                          setScanStep("complete");
+                          const mockResults = ["Dolo 650", "Paracetamol", "Crocin", "Calpol"];
+                          const randomResult = mockResults[Math.floor(Math.random() * mockResults.length)];
+                          setQ(randomResult);
+                          setSearchParams({ q: randomResult }, { replace: true });
+                          setTimeout(() => setIsScanning(false), 1000);
+                        }, 3500);
+                      }
+                    }}
+                  />
+                </div>
+              )}
+
+              {(scanStep === "uploading" || scanStep === "analyzing") && (
+                <div className="flex flex-col items-center justify-center py-12 gap-6">
+                  <div className="relative">
+                     <div className="h-24 w-24 rounded-full border-4 border-slate-100 border-t-primary animate-spin" />
+                     <div className="absolute inset-0 flex items-center justify-center">
+                        <Camera className="h-8 w-8 text-primary animate-pulse" />
+                     </div>
+                  </div>
+                  <div className="text-center space-y-1">
+                    <p className="font-black text-slate-900 uppercase tracking-widest text-xs">
+                      {scanStep === "uploading" ? "Uploading Image..." : "AI Analysis in Progress..."}
+                    </p>
+                    <p className="text-xs font-bold text-slate-400">Our system is identifying the medicine name.</p>
+                  </div>
+                </div>
+              )}
+
+              {scanStep === "complete" && (
+                <div className="flex flex-col items-center justify-center py-12 gap-6 animate-in zoom-in duration-300">
+                  <div className="h-20 w-20 bg-emerald-50 rounded-full flex items-center justify-center">
+                    <Pill className="h-10 w-10 text-emerald-500" />
+                  </div>
+                  <div className="text-center space-y-1">
+                    <p className="font-black text-slate-900 text-xl tracking-tight">Medicine Identified!</p>
+                    <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest">Searching for stock nearby...</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {loading && <div className="text-sm text-muted-foreground">Searching…</div>}

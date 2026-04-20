@@ -6,8 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Search, Filter, Store, MapPin, Phone, 
   CheckCircle2, XCircle, Clock, ExternalLink,
-  ChevronRight, MoreVertical, Loader2
+  ChevronRight, MoreVertical, Loader2, Info, Building2, User2, FileText, Camera as CameraIcon
 } from "lucide-react";
+import { 
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription 
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -19,7 +22,14 @@ const AdminPharmacies = () => {
 
   const fetchPharmacies = async () => {
     setLoading(true);
-    let query = supabase.from("pharmacies").select("*");
+    let query = supabase.from("pharmacies").select(`
+      *,
+      profiles:owner_id (
+        full_name,
+        email,
+        phone
+      )
+    `);
     
     if (filter !== "all") {
       query = query.eq("status", filter);
@@ -153,7 +163,115 @@ const AdminPharmacies = () => {
 
                 {/* Right Side: Action Strip */}
                 <div className="md:w-16 bg-gray-50/50 flex flex-row md:flex-col items-center justify-center gap-4 py-4 border-t md:border-t-0 md:border-l border-gray-100">
-                  <button className="p-2 text-gray-400 hover:text-[#10847E] transition-colors"><ExternalLink className="h-5 w-5" /></button>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <button className="p-2 text-gray-400 hover:text-[#10847E] transition-colors">
+                          <Info className="h-5 w-5" />
+                        </button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-2xl rounded-[40px] p-0 overflow-hidden border-none shadow-2xl">
+                        <div className="h-48 bg-slate-900 relative">
+                           {p.shop_photo_path ? (
+                             <img 
+                               src={`${supabase.storage.from('pharmacy-docs').getPublicUrl(p.shop_photo_path).data.publicUrl}`} 
+                               alt="Shop" 
+                               className="w-full h-full object-cover opacity-60"
+                             />
+                           ) : (
+                             <div className="w-full h-full flex items-center justify-center">
+                                <Building2 className="h-16 w-16 text-white/20" />
+                             </div>
+                           )}
+                           <div className="absolute bottom-6 left-8">
+                              <Badge className="mb-2 bg-primary text-white border-none uppercase text-[8px] font-black tracking-widest px-3">
+                                {p.status}
+                              </Badge>
+                              <h2 className="text-3xl font-black text-white tracking-tighter italic">{p.name}</h2>
+                           </div>
+                        </div>
+                        
+                        <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                           <div className="space-y-6">
+                              <div className="space-y-3">
+                                 <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-primary">
+                                    <Store className="h-3 w-3" /> Shop Details
+                                 </h4>
+                                 <div className="bg-slate-50 rounded-2xl p-4 space-y-4">
+                                    <div className="space-y-1">
+                                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Full Address</p>
+                                       <p className="text-sm font-bold text-slate-700 leading-tight">{p.address}, {p.city}, {p.pincode}</p>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                       <div className="space-y-1">
+                                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Opening Time</p>
+                                          <p className="text-sm font-bold text-slate-700">{p.open_time || "N/A"}</p>
+                                       </div>
+                                       <div className="space-y-1">
+                                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Closing Time</p>
+                                          <p className="text-sm font-bold text-slate-700">{p.close_time || "N/A"}</p>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+
+                              <div className="space-y-3">
+                                 <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-primary">
+                                    <FileText className="h-3 w-3" /> Compliance
+                                 </h4>
+                                 <div className="bg-slate-50 rounded-2xl p-4 space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                       <div className="space-y-1">
+                                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">GST Number</p>
+                                          <p className="text-sm font-bold text-slate-700">{p.gst_no || "N/A"}</p>
+                                       </div>
+                                       <div className="space-y-1">
+                                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">License No</p>
+                                          <p className="text-sm font-bold text-slate-700">{p.license_no || "N/A"}</p>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                           </div>
+
+                           <div className="space-y-6">
+                              <div className="space-y-3">
+                                 <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-primary">
+                                    <User2 className="h-3 w-3" /> Owner Info
+                                 </h4>
+                                 <div className="bg-slate-50 rounded-2xl p-4 space-y-4">
+                                    <div className="space-y-1">
+                                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Full Name</p>
+                                       <p className="text-sm font-bold text-slate-700">{p.profiles?.full_name || "N/A"}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Email Address</p>
+                                       <p className="text-sm font-bold text-slate-700 truncate">{p.profiles?.email || "N/A"}</p>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                       <div className="space-y-1">
+                                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Phone</p>
+                                          <p className="text-sm font-bold text-slate-700">{p.phone || p.profiles?.phone || "N/A"}</p>
+                                       </div>
+                                       <div className="space-y-1">
+                                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Aadhaar</p>
+                                          <p className="text-sm font-bold text-slate-700">{p.owner_aadhaar || "N/A"}</p>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                              
+                              <div className="pt-4 flex gap-3">
+                                 {p.status !== 'approved' && (
+                                   <Button onClick={() => updateStatus(p.id, 'approved')} className="flex-1 bg-emerald-500 hover:bg-emerald-600 font-black rounded-xl h-12 text-xs uppercase tracking-widest">Approve</Button>
+                                 )}
+                                 {p.status !== 'rejected' && (
+                                   <Button onClick={() => updateStatus(p.id, 'rejected')} variant="outline" className="flex-1 border-red-100 text-red-500 hover:bg-red-50 font-black rounded-xl h-12 text-xs uppercase tracking-widest">Reject</Button>
+                                 )}
+                              </div>
+                           </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors"><MoreVertical className="h-5 w-5" /></button>
                 </div>
               </CardContent>

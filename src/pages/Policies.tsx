@@ -9,7 +9,7 @@ const PolicyLayout = ({ title, children }: { title: string, children: React.Reac
         <div className="h-10 w-10 bg-primary rounded-xl flex items-center justify-center text-white">
           <Pill className="h-6 w-6" />
         </div>
-        <span className="text-2xl font-black tracking-tighter text-slate-900">MediHelth</span>
+        <span className="text-2xl font-black tracking-tighter text-slate-900">MediHealth</span>
       </Link>
     </div>
     <Card className="max-w-4xl mx-auto shadow-elegant border-none rounded-[40px] overflow-hidden">
@@ -26,9 +26,9 @@ const PolicyLayout = ({ title, children }: { title: string, children: React.Reac
 export const TermsOfService = () => (
   <PolicyLayout title="Terms of Service">
     <h2>1. Acceptance of Terms</h2>
-    <p>By accessing MediHelth, you agree to be bound by these Terms of Service. If you do not agree, please do not use the platform.</p>
+    <p>By accessing MediHealth, you agree to be bound by these Terms of Service. If you do not agree, please do not use the platform.</p>
     <h2>2. Services Provided</h2>
-    <p>MediHelth provides a platform connecting customers with pharmacies and delivery partners. We do not manufacture medicines.</p>
+    <p>MediHealth provides a platform connecting customers with pharmacies and delivery partners. We do not manufacture medicines.</p>
     <h2>3. User Obligations</h2>
     <p>Users must provide accurate information and follow local laws regarding prescription medicines.</p>
   </PolicyLayout>
@@ -59,7 +59,7 @@ export const RefundPolicy = () => (
 export const AccessibilityPolicy = () => (
   <PolicyLayout title="Accessibility">
     <h2>1. Our Commitment</h2>
-    <p>MediHelth is committed to ensuring digital accessibility for people with disabilities. We are continually improving the user experience for everyone.</p>
+    <p>MediHealth is committed to ensuring digital accessibility for people with disabilities. We are continually improving the user experience for everyone.</p>
     <h2>2. Standards</h2>
     <p>We aim to comply with Web Content Accessibility Guidelines (WCAG) 2.1 level AA standards across our platform.</p>
     <h2>3. Feedback</h2>
