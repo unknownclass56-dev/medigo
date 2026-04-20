@@ -22,6 +22,10 @@ const AdminDelivery = () => {
       if (filter !== "all") {
         partnerQuery = partnerQuery.eq("kyc_status", filter);
       }
+      
+      // Filter out incomplete profiles
+      partnerQuery = partnerQuery.neq("kyc_status", "incomplete");
+      
       const { data: partnerData, error: partnerError } = await partnerQuery.order("created_at", { ascending: false });
       if (partnerError) throw partnerError;
 

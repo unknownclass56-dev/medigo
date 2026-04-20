@@ -25,6 +25,9 @@ const AdminPharmacies = () => {
       query = query.eq("status", filter);
     }
     
+    // Only show pharmacies that have submitted their KYC (status not incomplete)
+    query = query.neq("kyc_status", "incomplete");
+    
     const { data } = await query.order("created_at", { ascending: false });
     setPharmacies(data || []);
     setLoading(false);

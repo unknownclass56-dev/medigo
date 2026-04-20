@@ -497,14 +497,20 @@ BEGIN
 
   -- Auto-create delivery partner record if role is delivery_partner
   IF (NEW.raw_user_meta_data->>'role') = 'delivery_partner' THEN
-    INSERT INTO public.delivery_partners (user_id, is_online, approved)
-    VALUES (NEW.id, false, false);
+    INSERT INTO public.delivery_partners (user_id, is_online, approved, kyc_status)
+    VALUES (NEW.id, false, false, 'incomplete');
   END IF;
 
   -- Auto-create draft pharmacy record if role is pharmacy_owner
   IF (NEW.raw_user_meta_data->>'role') = 'pharmacy_owner' THEN
-    INSERT INTO public.pharmacies (owner_id, name, address, lat, lng, status)
-    VALUES (NEW.id, 'My Pharmacy (Draft)', 'Update Address', 0, 0, 'pending');
+    INSERT INTO public.pharmacies (owner_id, name, address, phone, lat, lng, status, kyc_status)
+    VALUES (
+      NEW.id, 
+      COALESCE(NEW.raw_user_meta_data->>'full_name', 'My') || ' Pharmacy', 
+      'Location Update Pending', 
+      COALESCE(NEW.raw_user_meta_data->>'phone', 'No Phone'),
+      0, 0, 'pending', 'incomplete'
+    );
   END IF;
 
   RETURN NEW;
