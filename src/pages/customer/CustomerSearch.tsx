@@ -306,38 +306,39 @@ const CustomerSearch = () => {
           const hasBothOptions = m.price_per_piece != null && m.price_per_pack != null;
 
           return (
-            <Card key={m.inventory_id} className="shadow-soft transition hover:shadow-elegant overflow-hidden">
-              <div className="bg-primary/5 px-4 py-1.5 border-b border-primary/10">
+            <Card key={m.inventory_id} className="group shadow-soft transition-all hover:shadow-elegant overflow-hidden border-primary/5">
+              <div className="bg-primary/5 px-4 py-2 border-b border-primary/10 flex justify-between items-center">
                 <span className="text-[10px] font-black uppercase tracking-widest text-primary/70">{m.pharmacy_name}</span>
+                {me && <span className="text-[10px] font-bold text-muted-foreground">{m.distance_km < 1 ? "<1 km" : `${m.distance_km.toFixed(1)} km`}</span>}
               </div>
-              <CardContent className="flex h-full flex-col gap-3 p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-secondary text-primary overflow-hidden">
+              <CardContent className="flex flex-col gap-4 p-5">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-secondary text-primary overflow-hidden shadow-inner">
                     {m.image_url
-                      ? <SmartImage src={m.image_url} className="h-12 w-12 object-cover rounded-lg" />
-                      : <Pill className="h-5 w-5" />}
+                      ? <SmartImage src={m.image_url} className="h-full w-full object-cover" />
+                      : <Pill className="h-6 w-6 opacity-40" />}
                   </div>
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex items-start justify-between gap-2">
-                      <div className="font-semibold leading-tight">{m.name}</div>
-                      {m.requires_prescription && <Badge variant="outline" className="shrink-0">Rx</Badge>}
+                      <div className="font-black text-slate-800 leading-tight text-lg tracking-tight truncate">{m.name}</div>
+                      {m.requires_prescription && <Badge variant="outline" className="shrink-0 font-bold border-red-200 text-red-600 bg-red-50/50">Rx</Badge>}
                     </div>
-                    <div className="truncate text-xs text-muted-foreground">
-                      {m.generic_name ?? "—"}{m.manufacturer ? ` · ${m.manufacturer}` : ""}
+                    <div className="truncate text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      {m.generic_name ?? "Generic Medicine"}
                     </div>
                     {m.description && (
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">{m.description}</p>
+                      <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed font-medium">{m.description}</p>
                     )}
                     {(m.begin_date || m.expiry_date) && (
-                      <div className="flex flex-wrap gap-1 mt-1.5">
+                      <div className="flex flex-wrap gap-1.5 pt-1">
                         {m.begin_date && (
-                          <span className="text-[10px] font-semibold bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">
-                            From: {new Date(m.begin_date).toLocaleDateString('en-IN')}
+                          <span className="text-[9px] font-black bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md border border-blue-100/50">
+                            MFG: {new Date(m.begin_date).toLocaleDateString('en-GB')}
                           </span>
                         )}
                         {m.expiry_date && (
-                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${new Date(m.expiry_date) < new Date() ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
-                            Exp: {new Date(m.expiry_date).toLocaleDateString('en-IN')}
+                          <span className={`text-[9px] font-black px-2 py-0.5 rounded-md border ${new Date(m.expiry_date) < new Date() ? 'bg-red-50 text-red-600 border-red-100/50' : 'bg-emerald-50 text-emerald-600 border-emerald-100/50'}`}>
+                            EXP: {new Date(m.expiry_date).toLocaleDateString('en-GB')}
                           </span>
                         )}
                       </div>
@@ -345,38 +346,39 @@ const CustomerSearch = () => {
                   </div>
                 </div>
 
-                {/* Unit selector — only show if medicine has both options */}
+                {/* Unit selector */}
                 {hasBothOptions && (
-                  <div className="flex gap-1.5 rounded-lg bg-muted/50 p-1">
+                  <div className="flex gap-1.5 rounded-xl bg-slate-100/50 p-1 border border-slate-200/50">
                     <button
                       onClick={() => setUnit(m.medicine_id, "piece")}
-                      className={`flex-1 rounded-md py-1 text-xs font-semibold transition ${unit === "piece" ? "bg-background shadow text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                      className={`flex-1 rounded-lg py-2 text-[10px] font-black uppercase tracking-widest transition-all ${unit === "piece" ? "bg-white shadow-sm text-primary border border-primary/10" : "text-slate-400 hover:text-slate-600"}`}
                     >
-                      1 Piece · ₹{m.price_per_piece!.toFixed(2)}
+                      Piece · ₹{m.price_per_piece!.toFixed(2)}
                     </button>
                     <button
                       onClick={() => setUnit(m.medicine_id, "pack")}
-                      className={`flex-1 rounded-md py-1 text-xs font-semibold transition ${unit === "pack" ? "bg-background shadow text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                      className={`flex-1 rounded-lg py-2 text-[10px] font-black uppercase tracking-widest transition-all ${unit === "pack" ? "bg-white shadow-sm text-primary border border-primary/10" : "text-slate-400 hover:text-slate-600"}`}
                     >
-                      <Package className="inline h-3 w-3 mr-0.5" />
-                      1 Pack ({m.pieces_per_pack} pcs) · ₹{m.price_per_pack!.toFixed(2)}
+                      Pack · ₹{m.price_per_pack!.toFixed(2)}
                     </button>
                   </div>
                 )}
 
-                <div className="mt-auto flex items-end justify-between">
-                  <div>
-                    <div className="text-lg font-bold">₹{effectivePrice.toFixed(2)}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {hasBothOptions
-                        ? (unit === "pack" ? `per pack of ${m.pieces_per_pack}` : "per piece")
-                        : m.price_per_pack != null ? `per pack of ${m.pieces_per_pack}` : "per piece"
-                      }
-                      {me && ` · ${m.distance_km < 1 ? "<1 km" : `${m.distance_km.toFixed(1)} km`} away`}
+                <div className="pt-2 flex items-center justify-between border-t border-slate-50">
+                  <div className="flex flex-col">
+                    <div className="text-2xl font-black text-slate-900 tracking-tighter">
+                      ₹{effectivePrice.toFixed(2)}
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest ml-1">
+                        / {unit === "pack" ? "Pack" : "Piece"}
+                      </span>
                     </div>
                   </div>
-                  <Button size="sm" onClick={() => onAdd(m)}>
-                    <Plus className="mr-1 h-4 w-4" />Add
+                  <Button 
+                    size="sm" 
+                    onClick={() => onAdd(m)}
+                    className="rounded-xl px-6 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 font-black uppercase tracking-widest text-[10px]"
+                  >
+                    <Plus className="mr-1.5 h-3 w-3 stroke-[3]" /> Add to Bag
                   </Button>
                 </div>
               </CardContent>
