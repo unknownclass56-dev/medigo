@@ -8,9 +8,73 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Plus, Package, Trash2, Pencil, Check, Search, Upload, ImageIcon, CalendarIcon, AlignLeft } from "lucide-react";
+import { Loader2, Plus, Package, Trash2, Pencil, Check, Search, Upload, ImageIcon, CalendarIcon, AlignLeft, X } from "lucide-react";
 
-const EMPTY = { medicineName: "", medicineId: "", pricePerPiece: "", pricePerPack: "", piecesPerPack: "10", stock: "", description: "", beginDate: "", expiryDate: "" };
+// Shows images from Supabase storage (private bucket) using signed URLs
+const SmartImage = ({ src, className }: { src: string; className?: string }) => {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!src) return;
+    
+    // Check if it's a Supabase URL
+    if (src.includes(".supabase.co") && src.includes("/storage/v1/object/")) {
+      try {
+        // Find bucket and path. Format is usually: .../bucket/path/to/file
+        // We look for everything after /public/ or /authenticated/
+        const parts = src.split(/\/storage\/v1\/object\/(?:public|authenticated)\//);
+        if (parts.length > 1) {
+          const fullPath = parts[1];
+          const bucketMatch = fullPath.match(/^([^/]+)\/(.+)$/);
+          if (bucketMatch) {
+            const [, bucket, path] = bucketMatch;
+            // Remove any query parameters from the path
+            const cleanPath = path.split('?')[0];
+            
+            supabase.storage.from(bucket).createSignedUrl(cleanPath, 3600).then(({ data, error }) => {
+              if (error) {
+                console.error("SmartImage: Signed URL failed", error, { bucket, cleanPath });
+                setUrl(src);
+              } else {
+                setUrl(data?.signedUrl ?? src);
+              }
+            });
+            return;
+          }
+        }
+      } catch (e) {
+        console.error("SmartImage: Parsing error", e);
+      }
+    }
+    
+    setUrl(src);
+  }, [src]);
+
+  if (!url) return <div className="flex items-center justify-center bg-gray-50 rounded h-full w-full"><ImageIcon className="h-6 w-6 text-gray-200" /></div>;
+  return (
+    <img 
+      src={url} 
+      className={className} 
+      alt="Medicine" 
+      onError={(e) => { 
+        console.error("SmartImage: Render error for URL", url);
+        (e.target as HTMLImageElement).src = "https://placehold.co/200x200?text=No+Image";
+      }} 
+    />
+  );
+};
+
+const EMPTY = { 
+  medicineName: "", 
+  medicineId: "", 
+  pricePerPiece: "", 
+  pricePerPack: "", 
+  piecesPerPack: "10", 
+  stock: "", 
+  description: "", 
+  beginDate: "", 
+  expiryDate: "" 
+};
 
 const PharmacyInventory = () => {
   const { user } = useAuth();
@@ -21,8 +85,7 @@ const PharmacyInventory = () => {
   const [form, setForm] = useState(EMPTY);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
-  const [editStock, setEditStock] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
 
@@ -37,10 +100,16 @@ const PharmacyInventory = () => {
   };
 
   const load = async (pid: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("pharmacy_inventory")
-      .select("*, medicines(name, generic_name, image_url)")
-      .eq("pharmacy_id", pid);
+      .select("*, medicines(id, name, generic_name, image_url)")
+      .eq("pharmacy_id", pid)
+      .order('updated_at', { ascending: false });
+    
+    if (error) {
+      console.error("Load Inventory Error:", error);
+      toast({ title: "Load error", description: error.message, variant: "destructive" });
+    }
     setItems(data ?? []);
   };
 
@@ -64,24 +133,58 @@ const PharmacyInventory = () => {
     setShowSuggestions(false);
   };
 
-  const add = async () => {
+  const startEdit = (it: any) => {
+    setEditingId(it.id);
+    setForm({
+      medicineName: it.medicines?.name || "",
+      medicineId: it.medicine_id || "",
+      pricePerPiece: it.price_per_piece?.toString() || "",
+      pricePerPack: it.price_per_pack?.toString() || "",
+      piecesPerPack: it.pieces_per_pack?.toString() || "10",
+      stock: it.stock?.toString() || "",
+      description: it.description || "",
+      beginDate: it.begin_date || "",
+      expiryDate: it.expiry_date || ""
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setForm(EMPTY);
+    setImageFile(null);
+  };
+
+  const save = async () => {
     if (!pharmacyId || !form.medicineName || (!form.pricePerPiece && !form.pricePerPack)) {
       return toast({ title: "Please enter medicine name and at least one price", variant: "destructive" });
     }
     setSaving(true);
 
     let finalMedId = form.medicineId;
-    let uploadedImageUrl = medicines.find(m => m.id === finalMedId)?.image_url || null;
+    let uploadedImageUrl = null;
 
     if (imageFile) {
       const fileName = `${Date.now()}-${imageFile.name}`;
+      console.log("Attempting upload to kyc-docs/medicines/", fileName);
       const { error: uploadErr } = await supabase.storage.from("kyc-docs").upload(`medicines/${fileName}`, imageFile);
-      if (!uploadErr) {
-        const { data: { publicUrl } } = supabase.storage.from("kyc-docs").getPublicUrl(`medicines/${fileName}`);
-        uploadedImageUrl = publicUrl;
+      
+      if (uploadErr) {
+        console.error("Upload error:", uploadErr);
+        setSaving(false);
+        return toast({ 
+          title: "Image Upload Failed", 
+          description: uploadErr.message === "Bucket not found" ? "The 'kyc-docs' bucket does not exist. Please create it in Supabase Storage." : uploadErr.message, 
+          variant: "destructive" 
+        });
       }
+
+      const { data: { publicUrl } } = supabase.storage.from("kyc-docs").getPublicUrl(`medicines/${fileName}`);
+      uploadedImageUrl = publicUrl;
+      console.log("Generated Public URL:", uploadedImageUrl);
     }
 
+    // Update or Insert Medicine record if needed
     if (!finalMedId) {
       const existing = medicines.find(m => m.name.toLowerCase() === form.medicineName.toLowerCase());
       if (existing) {
@@ -101,7 +204,7 @@ const PharmacyInventory = () => {
     const packPrice  = form.pricePerPack  ? Number(form.pricePerPack)  : null;
     const basePrice  = piecePrice ?? packPrice ?? 0;
 
-    const { error } = await supabase.from("pharmacy_inventory").insert({
+    const payload = {
       pharmacy_id: pharmacyId,
       medicine_id: finalMedId,
       stock: Number(form.stock || 0),
@@ -112,27 +215,35 @@ const PharmacyInventory = () => {
       description: form.description || null,
       begin_date: form.beginDate || null,
       expiry_date: form.expiryDate || null,
-    });
+    };
 
-    if (error?.code === '23505') { setSaving(false); return toast({ title: "Already in inventory", variant: "destructive" }); }
+    let error;
+    if (editingId) {
+      const { error: err } = await supabase.from("pharmacy_inventory").update(payload).eq("id", editingId);
+      error = err;
+    } else {
+      const { error: err } = await supabase.from("pharmacy_inventory").insert(payload);
+      error = err;
+    }
+
+    if (error?.code === '23505') { 
+      setSaving(false); 
+      return toast({ title: "Already in inventory", variant: "destructive" }); 
+    }
+
     setSaving(false);
     if (error) return toast({ title: error.message, variant: "destructive" });
-    setForm(EMPTY);
-    setImageFile(null);
+
+    cancelEdit();
     load(pharmacyId);
-    toast({ title: "Success ✅", description: "Medicine added to inventory." });
+    toast({ title: editingId ? "Updated ✅" : "Added ✅", description: editingId ? "Medicine details updated." : "Medicine added to shelf." });
   };
 
   const remove = async (id: string) => {
     if (!pharmacyId) return;
+    if (!confirm("Remove this item from your shelf?")) return;
     await supabase.from("pharmacy_inventory").delete().eq("id", id);
     load(pharmacyId);
-  };
-
-  const saveStock = async (id: string) => {
-    await supabase.from("pharmacy_inventory").update({ stock: Number(editStock) }).eq("id", id);
-    setEditId(null);
-    load(pharmacyId!);
   };
 
   if (loading) return <div className="flex h-64 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
@@ -141,10 +252,18 @@ const PharmacyInventory = () => {
     <div className="container max-w-3xl space-y-5 py-6 font-sans">
       <h1 className="text-2xl font-black text-gray-800 tracking-tight">Inventory Manager</h1>
 
-      <Card className="shadow-elegant border-primary/5">
+      <Card className={`shadow-elegant border-primary/5 transition-colors ${editingId ? 'ring-2 ring-primary bg-primary/5' : ''}`}>
         <CardHeader className="bg-[#10847E]/5 border-b border-[#10847E]/10 rounded-t-2xl">
-          <CardTitle className="text-sm font-black uppercase tracking-widest text-[#10847E] flex items-center gap-2">
-            <Plus className="h-4 w-4" /> Add Product to Shelf
+          <CardTitle className="text-sm font-black uppercase tracking-widest text-[#10847E] flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              {editingId ? <Pencil className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              {editingId ? "Update Product Details" : "Add Product to Shelf"}
+            </span>
+            {editingId && (
+              <Button variant="ghost" size="sm" onClick={cancelEdit} className="h-7 text-[10px] font-black uppercase">
+                <X className="h-3 w-3 mr-1" /> Cancel
+              </Button>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6 pt-8">
@@ -169,13 +288,31 @@ const PharmacyInventory = () => {
               )}
             </div>
             <div className="grid gap-2">
-              <Label className="text-xs font-black uppercase tracking-wider text-gray-500">Product Image</Label>
+              <Label className="text-xs font-black uppercase tracking-wider text-gray-500">Product Image (Optional)</Label>
               <div className="flex items-center gap-3">
-                <Input type="file" accept="image/*" className="hidden" id="med-img" onChange={e => setImageFile(e.target.files?.[0] || null)} />
-                <Label htmlFor="med-img" className="flex-1 h-11 border-2 border-dashed rounded-xl flex items-center justify-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors">
-                  {imageFile ? <span className="text-xs font-bold text-teal-600 truncate px-2">{imageFile.name}</span> : <><Upload className="h-4 w-4 text-gray-400" /><span className="text-xs font-bold text-gray-400">Upload Photo</span></>}
+                <Input type="file" accept="image/*" className="hidden" id="med-img" onChange={e => {
+                  const file = e.target.files?.[0] || null;
+                  setImageFile(file);
+                  if (file) toast({ title: "Image Selected 📸", description: file.name });
+                }} />
+                <Label htmlFor="med-img" className={`flex-1 h-24 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${imageFile ? 'border-teal-500 bg-teal-50/30' : 'hover:bg-gray-50'}`}>
+                  {imageFile ? (
+                    <div className="flex flex-col items-center gap-1">
+                      <img src={URL.createObjectURL(imageFile)} className="h-12 w-12 object-cover rounded-lg border shadow-sm" alt="Preview" />
+                      <span className="text-[10px] font-black text-teal-600 truncate max-w-[150px]">{imageFile.name}</span>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="h-5 w-5 text-gray-400" />
+                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tap to Select Photo</span>
+                    </>
+                  )}
                 </Label>
-                {imageFile && <button onClick={() => setImageFile(null)} className="text-red-500"><Trash2 className="h-4 w-4" /></button>}
+                {imageFile && (
+                  <Button variant="ghost" size="icon" onClick={() => setImageFile(null)} className="text-red-500 hover:bg-red-50">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -205,7 +342,7 @@ const PharmacyInventory = () => {
           {/* Stock + Dates */}
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase text-gray-400 tracking-tighter">Initial Stock (Pcs)</Label>
+              <Label className="text-[10px] font-black uppercase text-gray-400 tracking-tighter">Current Stock (Pcs)</Label>
               <Input type="number" value={form.stock} onChange={e => setF("stock", e.target.value)} className="h-10 rounded-lg" />
             </div>
             <div className="space-y-2">
@@ -218,9 +355,18 @@ const PharmacyInventory = () => {
             </div>
           </div>
 
-          <Button onClick={add} disabled={saving} className="w-full h-12 rounded-xl bg-[#10847E] font-black text-lg shadow-lg shadow-[#10847E]/20">
-            {saving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Plus className="mr-2 h-5 w-5" />}
-            Add to My Shelf
+          <Button onClick={save} disabled={saving} className="w-full h-12 rounded-xl bg-[#10847E] font-black text-lg shadow-lg shadow-[#10847E]/20">
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                {imageFile ? "Uploading Image..." : "Saving..."}
+              </>
+            ) : (
+              <>
+                {editingId ? <Check className="mr-2 h-5 w-5" /> : <Plus className="mr-2 h-5 w-5" />}
+                {editingId ? "Save All Changes" : "Add to My Shelf"}
+              </>
+            )}
           </Button>
         </CardContent>
       </Card>
@@ -231,15 +377,19 @@ const PharmacyInventory = () => {
         </h2>
         <div className="grid gap-4">
           {items.map(it => (
-            <Card key={it.id} className="hover:shadow-lg transition-all border-none shadow-soft group overflow-hidden bg-white">
+            <Card key={it.id} className={`hover:shadow-lg transition-all border-none shadow-soft group overflow-hidden bg-white ${editingId === it.id ? 'ring-2 ring-primary/20' : ''}`}>
               <CardContent className="p-0 flex items-stretch">
-                <div className="w-24 bg-gray-50 flex items-center justify-center border-r">
-                  {it.medicines?.image_url ? <img src={it.medicines.image_url} className="h-16 w-16 object-contain" /> : <ImageIcon className="h-8 w-8 text-gray-200" />}
+                <div className="w-24 bg-gray-50 flex items-center justify-center border-r shrink-0">
+                  {it.medicines?.image_url ? (
+                    <SmartImage src={it.medicines.image_url} className="h-16 w-16 object-contain" />
+                  ) : (
+                    <ImageIcon className="h-8 w-8 text-gray-200" />
+                  )}
                 </div>
                 <div className="flex-1 p-5">
                   <div className="flex items-start justify-between">
-                    <div className="space-y-1 flex-1">
-                      <h4 className="font-black text-lg text-gray-800 tracking-tight">{it.medicines?.name}</h4>
+                    <div className="space-y-1 flex-1 min-w-0">
+                      <h4 className="font-black text-lg text-gray-800 tracking-tight truncate">{it.medicines?.name}</h4>
                       {it.description && <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">{it.description}</p>}
                       <div className="flex flex-wrap gap-2 pt-1">
                         {it.price_per_piece && <Badge variant="outline" className="text-[10px] font-black">₹{it.price_per_piece}/pc</Badge>}
@@ -255,17 +405,10 @@ const PharmacyInventory = () => {
                     <div className="flex items-center gap-4 ml-4">
                       <div className="text-right">
                         <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">STOCK</div>
-                        {editId === it.id ? (
-                          <div className="flex items-center gap-1">
-                            <Input type="number" value={editStock} onChange={e => setEditStock(e.target.value)} className="w-20 h-8 text-center text-sm font-black" />
-                            <Button size="icon" className="h-8 w-8" onClick={() => saveStock(it.id)}><Check className="h-3 w-3" /></Button>
-                          </div>
-                        ) : (
-                          <div className="text-2xl font-black text-[#10847E]">{it.stock} <span className="text-[10px] text-gray-400">pcs</span></div>
-                        )}
+                        <div className="text-2xl font-black text-[#10847E]">{it.stock} <span className="text-[10px] text-gray-400">pcs</span></div>
                       </div>
                       <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-400 hover:text-primary" onClick={() => { setEditId(it.id); setEditStock(String(it.stock)); }}><Pencil className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-400 hover:text-primary" onClick={() => startEdit(it)}><Pencil className="h-4 w-4" /></Button>
                         <Button size="icon" variant="ghost" className="h-8 w-8 text-gray-400 hover:text-red-500" onClick={() => remove(it.id)}><Trash2 className="h-4 w-4" /></Button>
                       </div>
                     </div>
@@ -274,6 +417,12 @@ const PharmacyInventory = () => {
               </CardContent>
             </Card>
           ))}
+          {items.length === 0 && (
+            <div className="text-center py-20 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+               <Package className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+               <p className="text-sm font-bold text-gray-400">Your shelf is empty. Add your first medicine above!</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

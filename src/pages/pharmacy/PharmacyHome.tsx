@@ -23,7 +23,7 @@ interface Pharmacy {
   lat: number;
   lng: number;
   status: "pending" | "approved" | "rejected" | "suspended";
-  is_online: boolean;
+  is_open: boolean;
 }
 
 const PharmacyHome = () => {
@@ -110,7 +110,7 @@ const PharmacyHome = () => {
     if (!pharmacy) return;
     const { error } = await supabase.from("pharmacies").update({ is_open: val }).eq("id", pharmacy.id);
     if (error) return toast({ title: error.message, variant: "destructive" });
-    setPharmacy({ ...pharmacy, is_online: val });
+    setPharmacy({ ...pharmacy, is_open: val });
     toast({ title: val ? "Service enabled" : "Service paused", description: val ? "Customers can now order from you." : "Your medicines are hidden from customers." });
   };
 
@@ -124,7 +124,7 @@ const PharmacyHome = () => {
       </div>
 
       {pharmacy && (
-        <Card className={pharmacy.is_online && pharmacy.status === "approved" ? "border-primary/40 bg-primary/5" : "border-muted"}>
+        <Card className={pharmacy.is_open && pharmacy.status === "approved" ? "border-primary/40 bg-primary/5" : "border-muted"}>
           <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <Store className="h-6 w-6 text-primary" />
@@ -132,20 +132,20 @@ const PharmacyHome = () => {
                 <div className="flex items-center gap-2">
                   <span className="font-semibold">Service status</span>
                   <Badge variant={pharmacy.status === "approved" ? "default" : "secondary"}>{pharmacy.status}</Badge>
-                  <Badge variant={pharmacy.is_online ? "default" : "outline"}>{pharmacy.is_online ? "Open" : "Closed"}</Badge>
+                  <Badge variant={pharmacy.is_open ? "default" : "outline"}>{pharmacy.is_open ? "Open" : "Closed"}</Badge>
                 </div>
                 <div className="text-sm text-muted-foreground">
                   {pharmacy.status !== "approved"
                     ? "Awaiting admin approval — orders won't reach you yet."
-                    : pharmacy.is_online
+                    : pharmacy.is_open
                       ? "You're accepting new orders. Customers can see your medicines."
                       : "Service paused — your medicines are hidden from customers."}
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Label htmlFor="open" className="text-sm">{pharmacy.is_online ? "Open" : "Closed"}</Label>
-              <Switch id="open" checked={pharmacy.is_online} onCheckedChange={toggleOpen} disabled={pharmacy.status !== "approved"} />
+              <Label htmlFor="open" className="text-sm">{pharmacy.is_open ? "Open" : "Closed"}</Label>
+              <Switch id="open" checked={pharmacy.is_open} onCheckedChange={toggleOpen} disabled={pharmacy.status !== "approved"} />
             </div>
           </CardContent>
         </Card>

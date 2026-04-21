@@ -13,6 +13,55 @@ import { useCart, distanceKm } from "@/lib/cart";
 import { useAuth } from "@/lib/auth";
 import { toast } from "@/hooks/use-toast";
 
+// Shows Supabase storage images via signed URL (works for private buckets)
+const SmartImage = ({ src, className }: { src: string; className?: string }) => {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!src) return;
+    
+    if (src.includes(".supabase.co") && src.includes("/storage/v1/object/")) {
+      try {
+        const parts = src.split(/\/storage\/v1\/object\/(?:public|authenticated)\//);
+        if (parts.length > 1) {
+          const fullPath = parts[1];
+          const bucketMatch = fullPath.match(/^([^/]+)\/(.+)$/);
+          if (bucketMatch) {
+            const [, bucket, path] = bucketMatch;
+            const cleanPath = path.split('?')[0];
+            
+            supabase.storage.from(bucket).createSignedUrl(cleanPath, 3600).then(({ data, error }) => {
+              if (error) {
+                console.error("SmartImage: Signed URL failed", error, { bucket, cleanPath });
+                setUrl(src);
+              } else {
+                setUrl(data?.signedUrl ?? src);
+              }
+            });
+            return;
+          }
+        }
+      } catch (e) {
+        console.error("SmartImage: Parsing error", e);
+      }
+    }
+    
+    setUrl(src);
+  }, [src]);
+
+  if (!url) return null;
+  return (
+    <img 
+      src={url} 
+      className={className} 
+      alt="Medicine" 
+      onError={(e) => { 
+        (e.target as HTMLImageElement).style.display = 'none'; 
+      }} 
+    />
+  );
+};
+
 interface MedicineCard {
   medicine_id: string;
   inventory_id: string;
@@ -28,6 +77,8 @@ interface MedicineCard {
   description: string | null;
   begin_date: string | null;
   expiry_date: string | null;
+  image_url: string | null;
+  pharmacy_name: string;
 }
 
 const CustomerSearch = () => {
@@ -56,7 +107,7 @@ const CustomerSearch = () => {
       setLoading(true);
       let invQuery = supabase
         .from("pharmacy_inventory")
-        .select("id, medicine_id, price, price_per_piece, price_per_pack, pieces_per_pack, description, begin_date, expiry_date, medicines!inner(id, name, generic_name, manufacturer, requires_prescription), pharmacies!inner(status, is_open, lat, lng)")
+        .select("id, medicine_id, price, price_per_piece, price_per_pack, pieces_per_pack, description, begin_date, expiry_date, medicines!inner(id, name, generic_name, manufacturer, requires_prescription, image_url), pharmacies!inner(status, is_open, lat, lng)")
         .gt("stock", 0)
         .eq("pharmacies.status", "approved")
         .eq("pharmacies.is_open", true)
@@ -64,34 +115,34 @@ const CustomerSearch = () => {
       if (q.trim()) invQuery = invQuery.ilike("medicines.name", `%${q.trim()}%`);
       const { data } = await invQuery;
 
-      const map = new Map<string, MedicineCard>();
-      (data ?? []).forEach((row: any) => {
+      const results: MedicineCard[] = (data ?? []).map((row: any) => {
         const m = row.medicines;
         const ph = row.pharmacies;
-        if (!m || !ph) return;
+        if (!m || !ph) return null;
         const dist = me ? distanceKm(me, { lat: ph.lat, lng: ph.lng }) : 0;
         const piecePx = row.price_per_piece != null ? Number(row.price_per_piece) : Number(row.price);
-        const cur = map.get(m.id);
-        if (!cur || piecePx < cur.price) {
-          map.set(m.id, {
-            medicine_id: m.id,
-            inventory_id: row.id,
-            name: m.name,
-            generic_name: m.generic_name,
-            manufacturer: m.manufacturer,
-            requires_prescription: m.requires_prescription,
-            price: piecePx,
-            price_per_piece: row.price_per_piece != null ? Number(row.price_per_piece) : null,
-            price_per_pack: row.price_per_pack != null ? Number(row.price_per_pack) : null,
-            pieces_per_pack: row.pieces_per_pack ?? 10,
-            distance_km: dist,
-            description: row.description ?? null,
-            begin_date: row.begin_date ?? null,
-            expiry_date: row.expiry_date ?? null,
-          });
-        }
-      });
-      setResults(Array.from(map.values()).sort((a, b) =>
+        
+        return {
+          medicine_id: m.id,
+          inventory_id: row.id,
+          name: m.name,
+          generic_name: m.generic_name,
+          manufacturer: m.manufacturer,
+          requires_prescription: m.requires_prescription,
+          price: piecePx,
+          price_per_piece: row.price_per_piece != null ? Number(row.price_per_piece) : null,
+          price_per_pack: row.price_per_pack != null ? Number(row.price_per_pack) : null,
+          pieces_per_pack: row.pieces_per_pack ?? 10,
+          distance_km: dist,
+          description: row.description ?? null,
+          begin_date: row.begin_date ?? null,
+          expiry_date: row.expiry_date ?? null,
+          image_url: m.image_url ?? null,
+          pharmacy_name: ph.name || "Pharmacy",
+        };
+      }).filter(Boolean) as MedicineCard[];
+
+      setResults(results.sort((a, b) =>
         me ? a.distance_km - b.distance_km : a.name.localeCompare(b.name),
       ));
       setLoading(false);
@@ -255,11 +306,16 @@ const CustomerSearch = () => {
           const hasBothOptions = m.price_per_piece != null && m.price_per_pack != null;
 
           return (
-            <Card key={m.medicine_id} className="shadow-soft transition hover:shadow-elegant">
+            <Card key={m.inventory_id} className="shadow-soft transition hover:shadow-elegant overflow-hidden">
+              <div className="bg-primary/5 px-4 py-1.5 border-b border-primary/10">
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary/70">{m.pharmacy_name}</span>
+              </div>
               <CardContent className="flex h-full flex-col gap-3 p-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-secondary text-primary">
-                    <Pill className="h-5 w-5" />
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-secondary text-primary overflow-hidden">
+                    {m.image_url
+                      ? <SmartImage src={m.image_url} className="h-12 w-12 object-cover rounded-lg" />
+                      : <Pill className="h-5 w-5" />}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-2">
