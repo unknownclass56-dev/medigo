@@ -55,14 +55,40 @@ const PharmacyHome = () => {
     navigator.geolocation.getCurrentPosition(async (pos) => {
       const { latitude: lat, longitude: lng } = pos.coords;
       try {
-        const { data } = await supabase.functions.invoke("reverse-geocode", { body: { lat, lng } });
+        let addressStr = "";
+        let cityStr = "";
+        let pinStr = "";
+
+        try {
+          const { data, error } = await supabase.functions.invoke("reverse-geocode", { body: { lat, lng } });
+          if (error) throw error;
+          if (data) {
+            addressStr = data.display_name || data.line1;
+            cityStr = data.city;
+            pinStr = data.pincode;
+          }
+        } catch (edgeErr) {
+          console.warn("Edge function failed, falling back to direct API", edgeErr);
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&addressdetails=1`);
+          if (!res.ok) throw new Error("Geocoding API failed");
+          const data = await res.json();
+          addressStr = data.display_name;
+          cityStr = data.address?.city || data.address?.town || data.address?.village || "";
+          pinStr = data.address?.postcode || "";
+        }
+
+        if (!addressStr) throw new Error("No location data found");
+
         setForm((f) => ({
           ...f, lat, lng,
-          address: f.address || data?.line1 || "",
-          city: f.city || data?.city || "",
-          pincode: f.pincode || data?.pincode || "",
+          address: addressStr,
+          city: cityStr || f.city,
+          pincode: pinStr || f.pincode,
         }));
-        toast({ title: "Location detected" });
+        toast({ title: "Location detected successfully!" });
+      } catch (err: any) {
+        toast({ title: "Detection failed", description: err.message, variant: "destructive" });
+        setForm((f) => ({ ...f, lat, lng, address: `Lat: ${lat}, Lng: ${lng}` }));
       } finally { setDetecting(false); }
     }, (err) => { setDetecting(false); toast({ title: err.message, variant: "destructive" }); }, { enableHighAccuracy: true, timeout: 15000 });
   };

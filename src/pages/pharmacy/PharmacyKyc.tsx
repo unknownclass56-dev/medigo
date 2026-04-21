@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Save, Upload, ShieldCheck } from "lucide-react";
+import { Loader2, Save, Upload, ShieldCheck, XCircle, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { toast } from "@/hooks/use-toast";
@@ -13,8 +14,13 @@ const PharmacyKyc = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [shopPhotoUrl, setShopPhotoUrl] = useState<string | null>(null);
+  const [detecting, setDetecting] = useState(false);
   const [pharmacy, setPharmacy] = useState<any>(null);
-  const [form, setForm] = useState({ license_no: "", gst_no: "", owner_aadhaar: "" });
+  const [form, setForm] = useState({ 
+    license_no: "", gst_no: "", owner_aadhaar: "",
+    address: "", city: "", pincode: "", lat: 0, lng: 0
+  });
   const [shopPhoto, setShopPhoto] = useState<File | null>(null);
 
   useEffect(() => {
@@ -27,15 +33,80 @@ const PharmacyKyc = () => {
           license_no: data.license_no ?? "",
           gst_no: data.gst_no ?? "",
           owner_aadhaar: data.owner_aadhaar ?? "",
+          address: data.address ?? "",
+          city: data.city ?? "",
+          pincode: data.pincode ?? "",
+          lat: data.lat ?? 0,
+          lng: data.lng ?? 0,
         });
+        if (data.shop_photo_path) {
+          const { data: signedData, error: signedError } = await supabase.storage
+            .from("kyc-docs")
+            .createSignedUrl(data.shop_photo_path, 3600);
+          if (!signedError && signedData?.signedUrl) {
+            setShopPhotoUrl(signedData.signedUrl);
+          } else {
+            // fallback to public URL
+            setShopPhotoUrl(supabase.storage.from("kyc-docs").getPublicUrl(data.shop_photo_path).data.publicUrl);
+          }
+        }
       }
       setLoading(false);
     })();
   }, [user]);
 
+  const detect = () => {
+    if (!navigator.geolocation) return toast({ title: "Geolocation unsupported", variant: "destructive" });
+    setDetecting(true);
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const { latitude: lat, longitude: lng } = pos.coords;
+      try {
+        let addressStr = "";
+        let cityStr = "";
+        let pinStr = "";
+        
+        try {
+          const { data, error } = await supabase.functions.invoke("reverse-geocode", { body: { lat, lng } });
+          if (error) throw error;
+          if (data) {
+            addressStr = data.display_name || data.line1;
+            cityStr = data.city;
+            pinStr = data.pincode;
+          }
+        } catch (edgeErr) {
+          console.warn("Edge function failed, falling back to direct API", edgeErr);
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&addressdetails=1`);
+          if (!res.ok) throw new Error("Geocoding API failed");
+          const data = await res.json();
+          addressStr = data.display_name;
+          cityStr = data.address?.city || data.address?.town || data.address?.village || "";
+          pinStr = data.address?.postcode || "";
+        }
+
+        if (!addressStr) throw new Error("No location data found");
+
+        setForm((f) => ({
+          ...f, lat, lng,
+          address: addressStr,
+          city: cityStr || f.city,
+          pincode: pinStr || f.pincode
+        }));
+        toast({ title: "Location detected successfully!" });
+      } catch (err: any) {
+        toast({ title: "Detection failed", description: err.message, variant: "destructive" });
+        setForm((f) => ({ ...f, lat, lng, address: `Lat: ${lat}, Lng: ${lng}` }));
+      } finally {
+        setDetecting(false);
+      }
+    }, (err) => {
+      setDetecting(false);
+      toast({ title: "Detection failed", description: err.message, variant: "destructive" });
+    }, { enableHighAccuracy: true });
+  };
+
   const submit = async () => {
     if (!user || !pharmacy) return toast({ title: "Register your pharmacy first", variant: "destructive" });
-    if (!form.license_no || !form.owner_aadhaar) return toast({ title: "License No. and Aadhaar are required", variant: "destructive" });
+    if (!form.license_no || !form.owner_aadhaar || !form.address) return toast({ title: "License No, Aadhaar, and Address are required", variant: "destructive" });
     setSaving(true);
 
     let shop_photo_path = pharmacy.shop_photo_path;
@@ -50,19 +121,26 @@ const PharmacyKyc = () => {
       license_no: form.license_no,
       gst_no: form.gst_no || null,
       owner_aadhaar: form.owner_aadhaar,
+      address: form.address,
+      city: form.city,
+      pincode: form.pincode,
+      lat: form.lat,
+      lng: form.lng,
       shop_photo_path,
       kyc_status: "pending",
+      status: "pending",
       kyc_submitted_at: new Date().toISOString(),
     }).eq("id", pharmacy.id);
 
     setSaving(false);
     if (error) return toast({ title: error.message, variant: "destructive" });
     toast({ title: "KYC submitted", description: "Admin will review your documents shortly." });
-    setPharmacy({ ...pharmacy, ...form, shop_photo_path, kyc_status: "pending" });
+    setPharmacy({ ...pharmacy, ...form, shop_photo_path, kyc_status: "pending", status: "pending" });
   };
 
   const isPending = pharmacy?.kyc_status === "pending";
   const isApproved = pharmacy?.kyc_status === "approved";
+  const isRejected = pharmacy?.kyc_status === "rejected";
   const isReadOnly = isPending || isApproved;
 
   if (loading) return <div className="flex h-64 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
@@ -71,7 +149,7 @@ const PharmacyKyc = () => {
     <div className="container max-w-2xl space-y-6 py-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">KYC verification</h1>
-        {pharmacy && <Badge variant={isApproved ? "default" : isPending ? "secondary" : "outline"}>{pharmacy.kyc_status || 'NOT SUBMITTED'}</Badge>}
+        {pharmacy && <Badge variant={isApproved ? "default" : isRejected ? "destructive" : isPending ? "secondary" : "outline"}>{pharmacy.kyc_status || 'NOT SUBMITTED'}</Badge>}
       </div>
 
       {!pharmacy && (
@@ -102,6 +180,37 @@ const PharmacyKyc = () => {
             </Card>
           )}
 
+          {isRejected && (
+            <Card className="bg-red-50 border-red-200">
+              <CardContent className="p-4 flex items-center gap-3">
+                <XCircle className="h-5 w-5 text-red-500" />
+                <div className="text-red-800 text-sm font-medium">
+                  Your KYC application was rejected. Please review your documents and submit again.
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardHeader><CardTitle className="text-base flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" />Location details</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <Button type="button" variant="secondary" onClick={detect} disabled={detecting || isReadOnly} className="w-full">
+                {detecting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MapPin className="mr-2 h-4 w-4" />}
+                Detect store location
+              </Button>
+              <div className="grid gap-2">
+                <Label>Exact Full Location *</Label>
+                <Textarea 
+                  value={form.address} 
+                  onChange={(e) => setForm({ ...form, address: e.target.value })} 
+                  placeholder="e.g. 123 Main St, Near Park, Mumbai, 400001" 
+                  disabled={isReadOnly} 
+                  rows={3}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader><CardTitle className="text-base flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-primary" />Business documents</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -110,6 +219,16 @@ const PharmacyKyc = () => {
               <div className="grid gap-2"><Label>Owner Aadhaar number *</Label><Input value={form.owner_aadhaar} onChange={(e) => setForm({ ...form, owner_aadhaar: e.target.value })} placeholder="12-digit Aadhaar" maxLength={12} disabled={isReadOnly} /></div>
               <div className="grid gap-2">
                 <Label>Shop photo {pharmacy.shop_photo_path && <span className="text-xs text-muted-foreground">(uploaded)</span>}</Label>
+                {shopPhotoUrl && (
+                  <div className="h-32 w-48 rounded-xl overflow-hidden border border-gray-200 shadow-sm relative mb-2">
+                    <img 
+                      src={shopPhotoUrl} 
+                      alt="Shop" 
+                      className="w-full h-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  </div>
+                )}
                 <Input type="file" accept="image/*" onChange={(e) => setShopPhoto(e.target.files?.[0] ?? null)} disabled={isReadOnly} />
               </div>
             </CardContent>

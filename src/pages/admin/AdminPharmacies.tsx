@@ -14,6 +14,26 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
+// Helper component to display shop image using signed URL (works for private buckets)
+const ShopPhotoImg = ({ path }: { path: string }) => {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase.storage.from("kyc-docs").createSignedUrl(path, 3600);
+      if (!error && data?.signedUrl) {
+        setUrl(data.signedUrl);
+      } else {
+        // fallback to public URL
+        setUrl(supabase.storage.from("kyc-docs").getPublicUrl(path).data.publicUrl);
+      }
+    })();
+  }, [path]);
+
+  if (!url) return null;
+  return <img src={url} alt="Shop" className="w-full h-full object-cover opacity-80" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />;
+};
+
 const AdminPharmacies = () => {
   const [pharmacies, setPharmacies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -194,11 +214,7 @@ const AdminPharmacies = () => {
                       <DialogContent className="sm:max-w-2xl rounded-[40px] p-0 overflow-hidden border-none shadow-2xl">
                         <div className="h-48 bg-slate-900 relative">
                            {p.shop_photo_path ? (
-                             <img 
-                               src={`${supabase.storage.from('kyc-docs').getPublicUrl(p.shop_photo_path).data.publicUrl}`} 
-                               alt="Shop" 
-                               className="w-full h-full object-cover opacity-60"
-                             />
+                             <ShopPhotoImg path={p.shop_photo_path} />
                            ) : (
                              <div className="w-full h-full flex items-center justify-center">
                                 <Building2 className="h-16 w-16 text-white/20" />
