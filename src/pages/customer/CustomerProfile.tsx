@@ -91,15 +91,52 @@ const CustomerProfile = () => {
       async (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
         try {
+          let line1 = "";
+          let city = "";
+          let state = "";
+          let pincode = "";
+
+          try {
+            const { data, error } = await supabase.functions.invoke("reverse-geocode", { body: { lat, lng } });
+            if (error) throw error;
+            if (data) {
+              line1 = data.line1 || data.display_name?.split(",")[0] || "";
+              city = data.city || "";
+              state = data.state || "";
+              pincode = data.pincode || "";
+            }
+          } catch (edgeErr) {
+            console.warn("Edge function failed, falling back to direct API", edgeErr);
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&addressdetails=1`);
+            if (res.ok) {
+              const data = await res.json();
+              line1 = data.address.road || data.display_name.split(",")[0];
+              city = data.address.city || data.address.town || data.address.village || "";
+              state = data.address.state || "";
+              pincode = data.address.postcode || "";
+            }
+          }
+
+          const fullAddress = [line1, city, state, pincode].filter(Boolean).join(", ");
+
           setAddr(prev => ({
             ...prev,
+            line1: line1 || prev.line1,
+            city: city || prev.city,
+            state: state || prev.state,
+            pincode: pincode || prev.pincode,
             lat,
             lng,
-            display: `Detected: ${lat.toFixed(5)}, ${lng.toFixed(5)}`
+            display: fullAddress || `Coordinates: ${lat.toFixed(5)}, ${lng.toFixed(5)}`
           }));
-          toast({ title: "Location detected", description: "Coordinates updated. Please fill address details." });
+          
+          toast({ 
+            title: fullAddress ? "Location detected! 📍" : "Coordinates detected", 
+            description: fullAddress ? "Address fields updated." : "Please enter street details manually." 
+          });
         } catch (e: any) {
-          toast({ title: "Could not get address", description: e?.message ?? "Try again", variant: "destructive" });
+          console.error("Detection Error:", e);
+          toast({ title: "Could not get address", description: "GPS worked, but address lookup failed. Please enter manually.", variant: "destructive" });
         } finally {
           setDetecting(false);
         }
