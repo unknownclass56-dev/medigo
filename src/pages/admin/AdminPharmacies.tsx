@@ -22,24 +22,41 @@ const AdminPharmacies = () => {
 
   const fetchPharmacies = async () => {
     setLoading(true);
-    let query = supabase.from("pharmacies").select(`
-      *,
-      profiles:owner_id (
-        full_name,
-        email,
-        phone
-      )
-    `);
+    let query = supabase.from("pharmacies").select("*");
     
     if (filter !== "all") {
       query = query.eq("status", filter);
     }
     
-    // Only show pharmacies that have submitted their KYC (status not incomplete)
-    query = query.neq("kyc_status", "incomplete");
+    const { data: pharmaciesData, error } = await query.order("created_at", { ascending: false });
     
-    const { data } = await query.order("created_at", { ascending: false });
-    setPharmacies(data || []);
+    if (error) {
+      toast({ title: "Error fetching pharmacies", description: error.message, variant: "destructive" });
+      setLoading(false);
+      return;
+    }
+
+    if (!pharmaciesData || pharmaciesData.length === 0) {
+      setPharmacies([]);
+      setLoading(false);
+      return;
+    }
+
+    const ownerIds = pharmaciesData.map(p => p.owner_id).filter(Boolean);
+    const { data: profilesData } = await supabase
+      .from("profiles")
+      .select("user_id, full_name, email, phone")
+      .in("user_id", ownerIds);
+
+    const combined = pharmaciesData.map(p => {
+      const profile = profilesData?.find(prof => prof.user_id === p.owner_id);
+      return {
+        ...p,
+        profiles: profile || null
+      };
+    });
+
+    setPharmacies(combined);
     setLoading(false);
   };
 
@@ -50,7 +67,7 @@ const AdminPharmacies = () => {
   const updateStatus = async (id: string, status: "approved" | "pending" | "rejected" | "suspended") => {
     const { error } = await supabase
       .from("pharmacies")
-      .update({ status })
+      .update({ status, kyc_status: status })
       .eq("id", id);
     
     if (error) {
@@ -120,13 +137,18 @@ const AdminPharmacies = () => {
                         <MapPin className="h-3 w-3" /> {p.city || "N/A"}, {p.pincode || ""}
                       </div>
                     </div>
-                    <Badge className={`uppercase text-[9px] font-black px-3 py-1 rounded-full ${
-                      p.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                      p.status === 'pending' ? 'bg-orange-50 text-orange-600 border-orange-100' :
-                      'bg-red-50 text-red-600 border-red-100'
-                    }`}>
-                      {p.status}
-                    </Badge>
+                    <div className="flex flex-col gap-2 items-end">
+                      <Badge className={`uppercase text-[9px] font-black px-3 py-1 rounded-full ${
+                        p.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                        p.status === 'pending' ? 'bg-orange-50 text-orange-600 border-orange-100' :
+                        'bg-red-50 text-red-600 border-red-100'
+                      }`}>
+                        {p.status}
+                      </Badge>
+                      <Badge variant="outline" className={`uppercase text-[9px] font-black px-2 py-0.5 rounded-full ${p.kyc_status === 'pending' ? 'border-orange-200 text-orange-500 bg-orange-50/50' : p.kyc_status === 'approved' ? 'border-emerald-200 text-emerald-500 bg-emerald-50/50' : 'border-gray-200 text-gray-500 bg-gray-50'}`}>
+                        KYC: {p.kyc_status || 'NOT SUBMITTED'}
+                      </Badge>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 pt-2">
@@ -173,7 +195,7 @@ const AdminPharmacies = () => {
                         <div className="h-48 bg-slate-900 relative">
                            {p.shop_photo_path ? (
                              <img 
-                               src={`${supabase.storage.from('pharmacy-docs').getPublicUrl(p.shop_photo_path).data.publicUrl}`} 
+                               src={`${supabase.storage.from('kyc-docs').getPublicUrl(p.shop_photo_path).data.publicUrl}`} 
                                alt="Shop" 
                                className="w-full h-full object-cover opacity-60"
                              />

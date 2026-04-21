@@ -178,20 +178,22 @@ const AdminUsers = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (userId: string) => {
-      // Hard delete roles (deactivation)
+      // Permanent delete from profiles and roles
       await supabase.from("user_roles").delete().eq("user_id", userId);
+      const { error } = await supabase.from("profiles").delete().eq("user_id", userId);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-      toast.success("User deactivated successfully!");
+      toast.success("User permanently deleted!");
     },
-    onError: (err: any) => toast.error("Failed to deactivate: " + err.message)
+    onError: (err: any) => toast.error("Failed to delete: " + err.message)
   });
 
   const displayUsers = users?.filter(u => {
     if (tab === "all") return true;
-    if (tab === "delivery") return u.user_roles.some((r: any) => r.role === "delivery_partner");
-    if (tab === "pharmacy") return u.user_roles.some((r: any) => r.role === "pharmacy_owner");
+    if (tab === "delivery") return u.user_roles?.some((r: any) => r.role === "delivery_partner");
+    if (tab === "pharmacy") return u.user_roles?.some((r: any) => r.role === "pharmacy_owner" || r.role === "pharmacy");
     return true;
   });
 
@@ -290,9 +292,9 @@ const AdminUsers = () => {
                           <DropdownMenuSeparator className="mx-1" />
                           <DropdownMenuItem 
                             className="gap-2.5 text-destructive focus:text-destructive focus:bg-destructive/5 cursor-pointer text-sm font-medium rounded-md h-9 px-2"
-                            onClick={() => { if (window.confirm("CONFIRM DELETION: This will deactivate the user and remove their access. Proceed?")) deleteMutation.mutate(user.user_id); }}
+                            onClick={() => { if (window.confirm("CONFIRM DELETION: This will permanently delete the user profile and their access. Proceed?")) deleteMutation.mutate(user.user_id); }}
                           >
-                            <Trash2 className="h-4 w-4 opacity-70" /> Delete / Deactivate
+                            <Trash2 className="h-4 w-4 opacity-70" /> Delete Permanently
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
