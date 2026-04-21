@@ -546,6 +546,8 @@ export type Database = {
       }
       pharmacy_inventory: {
         Row: {
+          begin_date: string | null
+          description: string | null
           expiry_date: string | null
           id: string
           medicine_id: string
@@ -558,6 +560,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          begin_date?: string | null
+          description?: string | null
           expiry_date?: string | null
           id?: string
           medicine_id: string
@@ -570,6 +574,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          begin_date?: string | null
+          description?: string | null
           expiry_date?: string | null
           id?: string
           medicine_id?: string

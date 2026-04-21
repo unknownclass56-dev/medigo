@@ -15,6 +15,7 @@ import { toast } from "@/hooks/use-toast";
 
 interface MedicineCard {
   medicine_id: string;
+  inventory_id: string;
   name: string;
   generic_name: string | null;
   manufacturer: string | null;
@@ -24,6 +25,9 @@ interface MedicineCard {
   price_per_pack: number | null;
   pieces_per_pack: number;
   distance_km: number;
+  description: string | null;
+  begin_date: string | null;
+  expiry_date: string | null;
 }
 
 const CustomerSearch = () => {
@@ -52,7 +56,7 @@ const CustomerSearch = () => {
       setLoading(true);
       let invQuery = supabase
         .from("pharmacy_inventory")
-        .select("medicine_id, price, price_per_piece, price_per_pack, pieces_per_pack, medicines!inner(id, name, generic_name, manufacturer, requires_prescription), pharmacies!inner(status, is_open, lat, lng)")
+        .select("id, medicine_id, price, price_per_piece, price_per_pack, pieces_per_pack, description, begin_date, expiry_date, medicines!inner(id, name, generic_name, manufacturer, requires_prescription), pharmacies!inner(status, is_open, lat, lng)")
         .gt("stock", 0)
         .eq("pharmacies.status", "approved")
         .eq("pharmacies.is_open", true)
@@ -71,6 +75,7 @@ const CustomerSearch = () => {
         if (!cur || piecePx < cur.price) {
           map.set(m.id, {
             medicine_id: m.id,
+            inventory_id: row.id,
             name: m.name,
             generic_name: m.generic_name,
             manufacturer: m.manufacturer,
@@ -80,6 +85,9 @@ const CustomerSearch = () => {
             price_per_pack: row.price_per_pack != null ? Number(row.price_per_pack) : null,
             pieces_per_pack: row.pieces_per_pack ?? 10,
             distance_km: dist,
+            description: row.description ?? null,
+            begin_date: row.begin_date ?? null,
+            expiry_date: row.expiry_date ?? null,
           });
         }
       });
@@ -261,6 +269,23 @@ const CustomerSearch = () => {
                     <div className="truncate text-xs text-muted-foreground">
                       {m.generic_name ?? "—"}{m.manufacturer ? ` · ${m.manufacturer}` : ""}
                     </div>
+                    {m.description && (
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">{m.description}</p>
+                    )}
+                    {(m.begin_date || m.expiry_date) && (
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {m.begin_date && (
+                          <span className="text-[10px] font-semibold bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">
+                            From: {new Date(m.begin_date).toLocaleDateString('en-IN')}
+                          </span>
+                        )}
+                        {m.expiry_date && (
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${new Date(m.expiry_date) < new Date() ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                            Exp: {new Date(m.expiry_date).toLocaleDateString('en-IN')}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
