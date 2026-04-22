@@ -283,7 +283,7 @@ const Landing = () => {
                 <div className="absolute inset-0 flex h-10 w-10 items-center justify-center rounded-xl gradient-primary text-white shadow-lg -z-0 opacity-20"><Pill className="h-5 w-5" /></div>
               </div>
               <span className="text-xl font-black tracking-tighter text-slate-900">
-                Medi<span className="text-primary">Helth</span>
+                Medi<span className="text-primary">Health</span>
               </span>
             </Link>
 
