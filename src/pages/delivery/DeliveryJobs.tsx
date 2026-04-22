@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Bike, Loader2, MapPin, Phone, CheckCircle2, Timer, Volume2, RefreshCw, Banknote, Smartphone } from "lucide-react";
+import { Bike, Loader2, MapPin, Phone, CheckCircle2, Timer, Volume2, RefreshCw, Banknote, Smartphone, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { toast } from "@/hooks/use-toast";
@@ -69,23 +69,29 @@ function JobCard({
           <Badge variant="outline" className="text-[11px]">Awaiting Pickup</Badge>
         </div>
 
-        {/* Address */}
-        <div className="flex items-start gap-2 text-sm">
-          <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-          <div>
-            <div className="font-medium">{job.profiles?.full_name ?? "Customer"}</div>
-            <div className="text-muted-foreground text-xs">
-              {[addr.line1, addr.line2, addr.city, addr.pincode].filter(Boolean).join(", ") || "Address not available"}
-            </div>
-          </div>
-        </div>
+        {/* Customer Detail Section */}
+        <div className="rounded-xl bg-slate-50 p-3 border border-slate-100 space-y-3">
+           <div className="flex items-center gap-2">
+              <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700">
+                <User className="h-4 w-4" />
+              </div>
+              <div className="font-black text-slate-900">{job.profiles?.full_name ?? "Customer"}</div>
+           </div>
+           
+           <div className="flex items-start gap-2 text-sm">
+              <MapPin className="h-4 w-4 text-primary shrink-0 mt-1" />
+              <div className="text-slate-600 font-medium leading-relaxed">
+                 <span className="block text-[10px] uppercase tracking-widest text-slate-400 font-black mb-0.5">Delivery Address</span>
+                 {[addr.line1, addr.line2, addr.city, addr.pincode].filter(Boolean).join(", ") || "Address not available"}
+              </div>
+           </div>
 
-        {/* Phone */}
-        {job.profiles?.phone && (
-          <a href={`tel:${job.profiles.phone}`} className="flex items-center gap-2 text-xs text-blue-600 hover:underline">
-            <Phone className="h-3.5 w-3.5" />{job.profiles.phone}
-          </a>
-        )}
+           {job.profiles?.phone && (
+             <a href={`tel:${job.profiles.phone}`} className="flex items-center justify-center gap-2 w-full bg-white border-2 border-blue-100 text-blue-600 rounded-lg px-3 py-2 text-xs font-black hover:bg-blue-50 transition-colors">
+               <Phone className="h-3.5 w-3.5" /> CALL: {job.profiles.phone}
+             </a>
+           )}
+        </div>
 
         {/* Accept button */}
         {!expired && (
@@ -124,20 +130,29 @@ function ActiveJobCard({ job, processing, onDeliver }: { job: any; processing: s
             <div className="text-xl font-black text-primary">₹{Number(job.delivery_charge ?? 0).toFixed(2)}</div>
           </div>
         </div>
-        <div className="flex items-start gap-2 text-sm">
-          <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-          <div>
-            <div className="font-medium">{job.profiles?.full_name ?? "Customer"}</div>
-            <div className="text-muted-foreground text-xs">
-              {[addr.line1, addr.line2, addr.city, addr.pincode].filter(Boolean).join(", ") || "Address not available"}
-            </div>
-          </div>
+        {/* Customer Detail Section */}
+        <div className="rounded-xl bg-slate-50 p-3 border border-slate-100 space-y-3">
+           <div className="flex items-center gap-2">
+              <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700">
+                <User className="h-4 w-4" />
+              </div>
+              <div className="font-black text-slate-900">{job.profiles?.full_name ?? "Customer"}</div>
+           </div>
+           
+           <div className="flex items-start gap-2 text-sm">
+              <MapPin className="h-4 w-4 text-primary shrink-0 mt-1" />
+              <div className="text-slate-600 font-medium leading-relaxed">
+                 <span className="block text-[10px] uppercase tracking-widest text-slate-400 font-black mb-0.5">Delivery Address</span>
+                 {[addr.line1, addr.line2, addr.city, addr.pincode].filter(Boolean).join(", ") || "Address not available"}
+              </div>
+           </div>
+
+           {job.profiles?.phone && (
+             <a href={`tel:${job.profiles.phone}`} className="flex items-center justify-center gap-2 w-full bg-blue-600 text-white rounded-lg px-3 py-2 text-sm font-black hover:bg-blue-700 transition-colors">
+               <Phone className="h-4 w-4" /> CALL CUSTOMER
+             </a>
+           )}
         </div>
-        {job.profiles?.phone && (
-          <a href={`tel:${job.profiles.phone}`} className="flex items-center gap-2 text-xs text-blue-600 hover:underline">
-            <Phone className="h-3.5 w-3.5" />{job.profiles.phone}
-          </a>
-        )}
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button

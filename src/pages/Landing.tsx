@@ -23,6 +23,57 @@ import { useCart } from "@/lib/cart";
 import { toast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 
+const CartSheetContent = ({ items, subtotal, count, remove, setQty }: any) => (
+  <SheetContent className="w-full sm:max-w-sm flex flex-col p-0 border-l-0 shadow-2xl">
+    <SheetHeader className="p-6 border-b bg-slate-50/50">
+      <SheetTitle className="flex items-center gap-2 text-slate-900 font-black uppercase tracking-widest text-[10px]">
+        <ShoppingBag className="h-4 w-4 text-primary" /> Shopping Bag
+      </SheetTitle>
+    </SheetHeader>
+    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      {items.length === 0 ? (
+        <div className="h-full flex flex-col items-center justify-center text-center space-y-4">
+           <ShoppingCart className="h-10 w-10 text-slate-200" />
+           <p className="font-black text-slate-300 uppercase tracking-widest text-[9px]">Bag is empty</p>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {items.map((it: any) => (
+            <div key={`${it.medicine_id}_${it.unit_type}`} className="flex gap-4 group">
+              <div className="h-16 w-16 bg-slate-50 rounded-2xl flex items-center justify-center shrink-0 border border-slate-100 group-hover:bg-primary/5">
+                <Pill className="h-6 w-6 text-slate-200" />
+              </div>
+              <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                <h4 className="font-bold text-slate-900 text-sm truncate">{it.name}</h4>
+                <div className="flex items-center justify-between">
+                   <div className="flex items-center gap-2 bg-slate-50 rounded-lg px-2 py-1">
+                      <button onClick={() => setQty(it.medicine_id, it.quantity - 1)} className="hover:text-primary"><Minus className="h-3 w-3" /></button>
+                      <span className="text-xs font-black w-4 text-center">{it.quantity}</span>
+                      <button onClick={() => setQty(it.medicine_id, it.quantity + 1)} className="hover:text-primary"><Plus className="h-3 w-3" /></button>
+                   </div>
+                   <span className="font-black text-slate-900 text-sm">₹{(it.price * it.quantity).toFixed(2)}</span>
+                </div>
+              </div>
+              <button onClick={() => remove(it.medicine_id)} className="text-slate-300 hover:text-destructive"><X className="h-4 w-4" /></button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+    {items.length > 0 && (
+      <SheetFooter className="p-6 border-t bg-white flex-col gap-6">
+        <div className="flex justify-between items-center w-full">
+           <span className="text-slate-900 font-black uppercase tracking-widest text-[10px]">Total</span>
+           <span className="text-2xl font-black text-slate-900 tracking-tighter">₹{subtotal.toFixed(2)}</span>
+        </div>
+        <Button asChild className="w-full h-14 rounded-xl bg-primary hover:bg-primary/90 font-black">
+           <Link to="/app/cart" className="flex items-center justify-center gap-2">Checkout <ArrowRight className="h-4 w-4" /></Link>
+        </Button>
+      </SheetFooter>
+    )}
+  </SheetContent>
+);
+
 const Landing = () => {
   const { user, roles } = useAuth();
   const { items, add, remove, setQty, subtotal, count } = useCart();
@@ -296,6 +347,7 @@ const Landing = () => {
                       {count > 0 && <span className="absolute -top-1 -right-1 h-3.5 w-3.5 bg-primary rounded-full text-[7px] font-black flex items-center justify-center">{count}</span>}
                     </button>
                  </SheetTrigger>
+                 <CartSheetContent items={items} subtotal={subtotal} count={count} remove={remove} setQty={setQty} />
                </Sheet>
             </div>
           </div>
@@ -355,54 +407,7 @@ const Landing = () => {
                   <ShoppingCart className="h-4 w-4 mr-2" /> Bag {count > 0 && `(${count})`}
                 </Button>
               </SheetTrigger>
-              <SheetContent className="w-full sm:max-w-sm flex flex-col p-0 border-l-0 shadow-2xl">
-                <SheetHeader className="p-6 border-b bg-slate-50/50">
-                  <SheetTitle className="flex items-center gap-2 text-slate-900 font-black uppercase tracking-widest text-[10px]">
-                    <ShoppingBag className="h-4 w-4 text-primary" /> Shopping Bag
-                  </SheetTitle>
-                </SheetHeader>
-                <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                  {items.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-center space-y-4">
-                       <ShoppingCart className="h-10 w-10 text-slate-200" />
-                       <p className="font-black text-slate-300 uppercase tracking-widest text-[9px]">Bag is empty</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-6">
-                      {items.map((it) => (
-                        <div key={`${it.medicine_id}_${it.unit_type}`} className="flex gap-4 group">
-                          <div className="h-16 w-16 bg-slate-50 rounded-2xl flex items-center justify-center shrink-0 border border-slate-100 group-hover:bg-primary/5">
-                            <Pill className="h-6 w-6 text-slate-200" />
-                          </div>
-                          <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
-                            <h4 className="font-bold text-slate-900 text-sm truncate">{it.name}</h4>
-                            <div className="flex items-center justify-between">
-                               <div className="flex items-center gap-2 bg-slate-50 rounded-lg px-2 py-1">
-                                  <button onClick={() => setQty(it.medicine_id, it.quantity - 1)} className="hover:text-primary"><Minus className="h-3 w-3" /></button>
-                                  <span className="text-xs font-black w-4 text-center">{it.quantity}</span>
-                                  <button onClick={() => setQty(it.medicine_id, it.quantity + 1)} className="hover:text-primary"><Plus className="h-3 w-3" /></button>
-                               </div>
-                               <span className="font-black text-slate-900 text-sm">₹{(it.price * it.quantity).toFixed(2)}</span>
-                            </div>
-                          </div>
-                          <button onClick={() => remove(it.medicine_id)} className="text-slate-300 hover:text-destructive"><X className="h-4 w-4" /></button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {items.length > 0 && (
-                  <SheetFooter className="p-6 border-t bg-white flex-col gap-6">
-                    <div className="flex justify-between items-center w-full">
-                       <span className="text-slate-900 font-black uppercase tracking-widest text-[10px]">Total</span>
-                       <span className="text-2xl font-black text-slate-900 tracking-tighter">₹{subtotal.toFixed(2)}</span>
-                    </div>
-                    <Button asChild className="w-full h-14 rounded-xl bg-primary hover:bg-primary/90 font-black">
-                       <Link to="/app/cart" className="flex items-center justify-center gap-2">Checkout <ArrowRight className="h-4 w-4" /></Link>
-                    </Button>
-                  </SheetFooter>
-                )}
-              </SheetContent>
+              <CartSheetContent items={items} subtotal={subtotal} count={count} remove={remove} setQty={setQty} />
             </Sheet>
           </div>
         </div>
