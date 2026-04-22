@@ -32,14 +32,10 @@ export const DashboardShell = ({ brand, nav, children }: Props) => {
     <div className="flex min-h-screen w-full bg-muted/30">
       {/* Sidebar (desktop) */}
       <aside className="hidden w-64 shrink-0 border-r bg-sidebar lg:flex lg:flex-col">
-        <div className="flex h-16 items-center gap-2 border-b px-5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary text-primary-foreground">
-            <Pill className="h-4 w-4" />
-          </div>
-          <div>
-            <div className="text-sm font-bold leading-tight">MediHealth</div>
-            <div className="text-xs text-muted-foreground">{brand}</div>
-          </div>
+        <div className="flex h-16 items-center border-b px-5">
+          <Link to="/" className="flex items-center gap-2">
+            <img src="/logo.png" alt="MediHealth" className="h-10 w-auto object-contain" />
+          </Link>
         </div>
         <nav className="flex-1 space-y-1 p-3">
           {nav.map((item) => {
@@ -77,13 +73,9 @@ export const DashboardShell = ({ brand, nav, children }: Props) => {
       {/* Mobile top bar */}
       <div className="flex w-full flex-col">
         <header className="flex h-14 items-center justify-between border-b bg-background px-4 lg:hidden">
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md gradient-primary text-primary-foreground">
-              <Pill className="h-3.5 w-3.5" />
-            </div>
-            <span className="font-bold">MediHealth</span>
-            <span className="text-xs text-muted-foreground">· {brand}</span>
-          </div>
+          <Link to="/" className="flex items-center gap-2">
+            <img src="/logo.png" alt="MediHealth" className="h-8 w-auto object-contain" />
+          </Link>
           <Button variant="ghost" size="sm" onClick={handleSignOut}>
             <LogOut className="h-4 w-4" />
           </Button>

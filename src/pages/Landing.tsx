@@ -278,13 +278,9 @@ const Landing = () => {
         <div className="container mx-auto px-4 h-auto lg:h-16 py-3 lg:py-0 flex flex-col lg:flex-row items-center justify-between gap-3 lg:gap-6">
           <div className="w-full lg:w-auto flex items-center justify-between gap-4">
             <Link to="/" className="flex items-center gap-2 group transition-transform active:scale-95 shrink-0">
-              <div className="flex h-10 w-10 items-center justify-center relative">
-                <img src="/logo.png" alt="MediHealth" className="h-full w-full object-contain z-10" />
-                <div className="absolute inset-0 flex h-10 w-10 items-center justify-center rounded-xl gradient-primary text-white shadow-lg -z-0 opacity-20"><Pill className="h-5 w-5" /></div>
+              <div className="h-12 w-auto min-w-[120px]">
+                <img src="/logo.png" alt="MediHealth" className="h-full w-full object-contain" />
               </div>
-              <span className="text-xl font-black tracking-tighter text-slate-900">
-                Medi<span className="text-primary">Health</span>
-              </span>
             </Link>
 
             <div className="flex lg:hidden items-center gap-1.5">
