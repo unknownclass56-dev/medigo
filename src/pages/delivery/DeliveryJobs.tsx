@@ -2,7 +2,8 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Bike, Loader2, MapPin, Phone, CheckCircle2, Timer, Volume2, RefreshCw } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Bike, Loader2, MapPin, Phone, CheckCircle2, Timer, Volume2, RefreshCw, Banknote, Smartphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { toast } from "@/hooks/use-toast";
@@ -40,7 +41,7 @@ function JobCard({
 }: {
   job: any; windowSec: number; processing: string | null; onAccept: (id: string) => void;
 }) {
-  const secs = useCountdown(job.created_at, windowSec);
+  const secs = useCountdown(job.updated_at || job.created_at, windowSec);
   const expired = secs === 0;
   const timerColor = secs > 60 ? "text-green-600" : secs > 20 ? "text-yellow-600" : "text-destructive animate-pulse";
 
@@ -106,8 +107,9 @@ function JobCard({
   );
 }
 
-function ActiveJobCard({ job, processing, onDeliver }: { job: any; processing: string | null; onDeliver: (id: string) => void }) {
+function ActiveJobCard({ job, processing, onDeliver }: { job: any; processing: string | null; onDeliver: (id: string, method: string) => void }) {
   const addr = job.delivery_address ?? {};
+  const [open, setOpen] = useState(false);
 
   return (
     <Card className="border-primary/30 shadow-md overflow-hidden">
@@ -136,15 +138,50 @@ function ActiveJobCard({ job, processing, onDeliver }: { job: any; processing: s
             <Phone className="h-3.5 w-3.5" />{job.profiles.phone}
           </a>
         )}
-        <Button
-          className="w-full"
-          variant="default"
-          size="sm"
-          onClick={() => onDeliver(job.id)}
-          disabled={processing === job.id}
-        >
-          {processing === job.id ? <Loader2 className="h-4 w-4 animate-spin" /> : "✅ Mark as Delivered"}
-        </Button>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button
+              className="w-full"
+              variant="default"
+              size="sm"
+              disabled={processing === job.id}
+            >
+              {processing === job.id ? <Loader2 className="h-4 w-4 animate-spin" /> : "✅ Mark as Delivered"}
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md rounded-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-center text-xl font-black">Payment Collection</DialogTitle>
+            </DialogHeader>
+            <div className="py-4 space-y-6">
+              <div className="text-center space-y-1">
+                <div className="text-sm text-muted-foreground font-bold uppercase tracking-wider">Collect Amount</div>
+                <div className="text-4xl font-black text-primary">₹{Number(job.total ?? 0).toFixed(2)}</div>
+              </div>
+              <div className="space-y-3">
+                <p className="text-center text-sm font-semibold text-muted-foreground">How did the customer pay?</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button 
+                    variant="outline" 
+                    className="h-24 flex flex-col gap-2 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 transition-colors"
+                    onClick={() => { setOpen(false); onDeliver(job.id, "cod"); }}
+                  >
+                    <Banknote className="h-8 w-8" />
+                    <span className="font-bold">Cash</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="h-24 flex flex-col gap-2 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-colors"
+                    onClick={() => { setOpen(false); onDeliver(job.id, "online"); }}
+                  >
+                    <Smartphone className="h-8 w-8" />
+                    <span className="font-bold">UPI / Online</span>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
@@ -178,19 +215,20 @@ const DeliveryJobs = () => {
 
     const [{ data: p }, { data: cfg }] = await Promise.all([
       supabase.from("delivery_partners").select("*").eq("user_id", user.id).maybeSingle(),
-      supabase.from("platform_config").select("pharmacy_accept_window_seconds").eq("id", 1).maybeSingle(),
+      supabase.from("platform_config").select("pharmacy_accept_window_seconds, dp_accept_window_seconds").eq("id", 1).maybeSingle(),
     ]);
 
     setPartner(p);
-    if (cfg?.pharmacy_accept_window_seconds) setWindowSec(cfg.pharmacy_accept_window_seconds);
+    if (cfg?.dp_accept_window_seconds) setWindowSec(cfg.dp_accept_window_seconds);
+    else if (cfg?.pharmacy_accept_window_seconds) setWindowSec(cfg.pharmacy_accept_window_seconds);
 
     // Available jobs (awaiting_pickup + unassigned)
     const { data: avail, error: availErr } = await supabase
       .from("orders")
-      .select("id, status, total, delivery_charge, created_at, customer_id, delivery_address")
+      .select("id, status, total, delivery_charge, created_at, updated_at, customer_id, delivery_address")
       .eq("status", "awaiting_pickup")
       .is("delivery_partner_id", null)
-      .order("created_at", { ascending: false });
+      .order("updated_at", { ascending: false });
 
     if (availErr) {
       console.error("❌ Available jobs fetch error:", availErr.message);
@@ -201,10 +239,10 @@ const DeliveryJobs = () => {
     const myJobsQuery = p?.id
       ? await supabase
         .from("orders")
-        .select("id, status, total, delivery_charge, created_at, customer_id, delivery_address")
+        .select("id, status, total, delivery_charge, created_at, updated_at, customer_id, delivery_address")
         .eq("delivery_partner_id", p.id)
         .in("status", ["out_for_delivery", "awaiting_pickup"])
-        .order("created_at", { ascending: false })
+        .order("updated_at", { ascending: false })
       : { data: [] };
 
     const enrichedAvail = await enrichOrders(avail ?? []);
@@ -275,12 +313,13 @@ const DeliveryJobs = () => {
   };
 
   // ── Mark delivered ──────────────────────────────────────────────────────────
-  const markDelivered = async (orderId: string) => {
+  const markDelivered = async (orderId: string, paymentMethod: string) => {
     setProcessing(orderId);
     try {
       const { error } = await supabase.from("orders").update({
         status: "delivered",
         payment_status: "paid",
+        payment_method: paymentMethod,
       }).eq("id", orderId);
       if (error) throw error;
       toast({ title: "Delivered! ✅", description: "Great work!" });

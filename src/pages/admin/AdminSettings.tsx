@@ -186,6 +186,13 @@ const AdminSettings = () => {
                     <Clock className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   </div>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="dp_accept_window_seconds" className="font-semibold text-sm">Delivery Partner Acceptance Window (Sec)</Label>
+                  <div className="relative">
+                    <Input id="dp_accept_window_seconds" name="dp_accept_window_seconds" type="number" value={formData.dp_accept_window_seconds || ''} onChange={handleChange} className="pl-8" placeholder="e.g. 120" />
+                    <Clock className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  </div>
+                </div>
                 <div className="rounded-lg border border-blue-100 bg-blue-50/30 p-4 flex items-start gap-3">
                   <ShieldAlert className="h-5 w-5 text-blue-600 mt-0.5" />
                   <p className="text-[10px] text-blue-800/80 leading-relaxed font-bold">Changes apply instantly to new orders.</p>
