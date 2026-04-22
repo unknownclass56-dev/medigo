@@ -166,20 +166,20 @@ const PharmacyInventory = () => {
 
     if (imageFile) {
       const fileName = `${Date.now()}-${imageFile.name}`;
-      console.log("Attempting upload to kyc-docs/medicines/", fileName);
-      const { error: uploadErr } = await supabase.storage.from("kyc-docs").upload(`medicines/${fileName}`, imageFile);
+      console.log("Attempting upload to medicines/", fileName);
+      const { error: uploadErr } = await supabase.storage.from("medicines").upload(fileName, imageFile);
       
       if (uploadErr) {
         console.error("Upload error:", uploadErr);
         setSaving(false);
         return toast({ 
           title: "Image Upload Failed", 
-          description: uploadErr.message === "Bucket not found" ? "The 'kyc-docs' bucket does not exist. Please create it in Supabase Storage." : uploadErr.message, 
+          description: uploadErr.message === "Bucket not found" ? "The 'medicines' bucket does not exist. Please run the SQL fix provided." : uploadErr.message, 
           variant: "destructive" 
         });
       }
 
-      const { data: { publicUrl } } = supabase.storage.from("kyc-docs").getPublicUrl(`medicines/${fileName}`);
+      const { data: { publicUrl } } = supabase.storage.from("medicines").getPublicUrl(fileName);
       uploadedImageUrl = publicUrl;
       console.log("Generated Public URL:", uploadedImageUrl);
     }

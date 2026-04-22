@@ -88,8 +88,8 @@ const Landing = () => {
         const { data: inv } = await supabase
           .from("pharmacy_inventory")
           .select(`
-            id, price, price_per_piece, price_per_pack, pieces_per_pack, stock,
-            medicines!inner ( id, name, generic_name, image_url, requires_prescription, category ),
+            id, price, price_per_piece, price_per_pack, pieces_per_pack, stock, expiry_date,
+            medicines!inner ( id, name, generic_name, manufacturer, description, image_url, requires_prescription, category ),
             pharmacies!inner ( id, name, city, status )
           `)
           .eq("pharmacies.status", "approved")
@@ -491,13 +491,100 @@ const Landing = () => {
                     )}
                   </div>
                   <CardContent className="p-4 md:p-8 pt-3 md:pt-6 space-y-4 md:space-y-6">
-                    <div className="space-y-1">
-                      <div className="text-[8px] md:text-[10px] font-black text-primary uppercase tracking-widest truncate">{item.pharmacies?.name}</div>
-                      <h3 className="font-black text-slate-900 text-sm md:text-2xl truncate">{item.medicines?.name}</h3>
+                    <div className="space-y-3 flex-1 flex flex-col">
+                      <div className="space-y-1">
+                        <div className="text-[8px] md:text-[10px] font-black text-primary uppercase tracking-widest truncate">{item.pharmacies?.name}</div>
+                        <h3 className="font-black text-slate-900 text-sm md:text-xl line-clamp-2" title={item.medicines?.name}>{item.medicines?.name}</h3>
+                      </div>
+                      
+                      {item.expiry_date && (
+                        <div>
+                          <div className="text-[9px] md:text-[10px] font-black text-red-600 bg-red-50 inline-flex items-center px-2 py-0.5 rounded-md border border-red-100 uppercase tracking-widest">
+                            Exp: {new Date(item.expiry_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {item.medicines?.description && (
+                        <p className="text-[10px] md:text-xs text-slate-500 line-clamp-2 font-medium leading-relaxed">
+                          {item.medicines.description}
+                        </p>
+                      )}
+                      
+                      <div className="mt-auto pt-2">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <button className="text-[10px] md:text-xs font-black text-primary hover:text-primary/80 transition-colors uppercase tracking-widest flex items-center gap-1 group/btn">
+                              Read More <ChevronRight className="h-3 w-3 group-hover/btn:translate-x-0.5 transition-transform" />
+                            </button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-[480px] rounded-[32px] p-6 md:p-8 border-none shadow-2xl max-h-[90vh] overflow-y-auto hide-scrollbar">
+                            <DialogHeader className="space-y-4">
+                              <div className="h-20 w-20 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100">
+                                {item.medicines?.image_url ? (
+                                  <img src={item.medicines.image_url} alt={item.medicines.name} className="h-16 w-16 object-contain" />
+                                ) : (
+                                  <Pill className="h-10 w-10 text-slate-300" />
+                                )}
+                              </div>
+                              <div>
+                                <DialogTitle className="text-2xl md:text-3xl font-black tracking-tighter text-slate-900">{item.medicines?.name}</DialogTitle>
+                                {item.medicines?.generic_name && (
+                                  <DialogDescription className="font-bold text-slate-500 uppercase tracking-widest text-[10px] mt-1">
+                                    {item.medicines.generic_name}
+                                  </DialogDescription>
+                                )}
+                              </div>
+                            </DialogHeader>
+                            
+                            <div className="space-y-6 pt-6">
+                              {item.medicines?.description && (
+                                <div className="space-y-2">
+                                  <h4 className="font-black text-[10px] uppercase tracking-widest text-slate-400">Description</h4>
+                                  <p className="text-sm text-slate-600 font-medium leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100">{item.medicines.description}</p>
+                                </div>
+                              )}
+                              
+                              <div className="grid grid-cols-2 gap-3">
+                                {item.expiry_date && (
+                                  <div className="bg-red-50 p-3 rounded-xl border border-red-100">
+                                    <div className="font-black text-[9px] uppercase tracking-widest text-red-500 mb-1">Expiry Date</div>
+                                    <div className="text-sm font-bold text-red-700">{new Date(item.expiry_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+                                  </div>
+                                )}
+                                {item.medicines?.manufacturer && (
+                                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                    <div className="font-black text-[9px] uppercase tracking-widest text-slate-400 mb-1">Manufacturer</div>
+                                    <div className="text-xs font-bold text-slate-900 truncate" title={item.medicines.manufacturer}>{item.medicines.manufacturer}</div>
+                                  </div>
+                                )}
+                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                  <div className="font-black text-[9px] uppercase tracking-widest text-slate-400 mb-1">Category</div>
+                                  <div className="text-xs font-bold text-slate-900">{item.medicines?.category || "General"}</div>
+                                </div>
+                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                  <div className="font-black text-[9px] uppercase tracking-widest text-slate-400 mb-1">Prescription</div>
+                                  <div className="text-xs font-bold text-slate-900">{item.medicines?.requires_prescription ? "Required" : "Not Required"}</div>
+                                </div>
+                              </div>
+                              
+                              <div className="pt-6 mt-2 border-t border-slate-100 flex items-center justify-between sticky bottom-0 bg-white">
+                                <div>
+                                  <div className="font-black text-[9px] uppercase tracking-widest text-slate-400 mb-1">Price</div>
+                                  <div className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter">₹{(item.price_per_piece || item.price).toFixed(2)}</div>
+                                </div>
+                                <Button onClick={() => handleAddToCart(item)} className="h-12 md:h-14 px-6 md:px-8 rounded-xl md:rounded-2xl bg-slate-900 hover:bg-primary text-white font-black shadow-lg hover:scale-105 transition-transform active:scale-95">
+                                  Add to Bag <Plus className="ml-2 h-4 w-4 md:h-5 md:w-5" />
+                                </Button>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between pt-4 mt-auto border-t border-slate-50">
                       <div className="text-base md:text-2xl font-black text-slate-900 tracking-tighter">₹{(item.price_per_piece || item.price).toFixed(2)}</div>
-                      <Button onClick={() => handleAddToCart(item)} className="h-10 w-10 md:h-14 md:w-14 rounded-xl md:rounded-2xl bg-slate-900 hover:bg-primary text-white p-0 active:scale-90 shadow-lg"><Plus className="h-4 w-4 md:h-6 w-6" /></Button>
+                      <Button onClick={() => handleAddToCart(item)} className="h-10 w-10 md:h-14 md:w-14 rounded-xl md:rounded-2xl bg-slate-900 hover:bg-primary text-white p-0 active:scale-90 shadow-lg shrink-0"><Plus className="h-4 w-4 md:h-6 md:w-6" /></Button>
                     </div>
                   </CardContent>
                 </Card>
