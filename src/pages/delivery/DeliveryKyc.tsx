@@ -8,6 +8,7 @@ import { Loader2, Upload, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { toast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 type DocKey = "selfie" | "aadhaar" | "pan" | "dl" | "rc";
 const docLabels: { key: DocKey; label: string; required: boolean }[] = [
@@ -78,6 +79,8 @@ const DeliveryKyc = () => {
 
   if (loading) return <div className="flex h-64 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
+  const isSubmitted = partner?.kyc_status === "pending" || partner?.kyc_status === "approved";
+
   return (
     <div className="container max-w-2xl space-y-6 py-6">
       <div className="flex items-center justify-between">
@@ -85,30 +88,42 @@ const DeliveryKyc = () => {
         {partner && <Badge variant={partner.kyc_status === "approved" ? "default" : "secondary"}>{partner.kyc_status ?? "not submitted"}</Badge>}
       </div>
 
-      <Card>
+      {partner?.kyc_status === "pending" && (
+        <Alert className="border-2 border-yellow-500 bg-yellow-50/50 text-yellow-900 shadow-sm">
+          <ShieldCheck className="h-5 w-5 text-yellow-600" />
+          <AlertTitle className="font-black uppercase tracking-widest text-[10px]">Verification in Progress</AlertTitle>
+          <AlertDescription className="font-bold text-sm mt-1">
+            You have successfully submitted your KYC details. Please wait for 12-24 hours for KYC verification.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <Card className={isSubmitted ? "opacity-70 pointer-events-none grayscale-[0.5]" : ""}>
         <CardHeader><CardTitle className="text-base flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-primary" />Identity & vehicle documents</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="grid gap-2"><Label>Aadhaar number *</Label><Input value={form.aadhaar_no} onChange={(e) => setForm({ ...form, aadhaar_no: e.target.value })} maxLength={12} /></div>
-            <div className="grid gap-2"><Label>PAN number</Label><Input value={form.pan_no} onChange={(e) => setForm({ ...form, pan_no: e.target.value })} maxLength={10} /></div>
-            <div className="grid gap-2"><Label>Driving license no. *</Label><Input value={form.driving_license_no} onChange={(e) => setForm({ ...form, driving_license_no: e.target.value })} /></div>
-            <div className="grid gap-2"><Label>Vehicle RC no. *</Label><Input value={form.vehicle_rc_no} onChange={(e) => setForm({ ...form, vehicle_rc_no: e.target.value })} /></div>
+            <div className="grid gap-2"><Label>Aadhaar number *</Label><Input value={form.aadhaar_no} onChange={(e) => setForm({ ...form, aadhaar_no: e.target.value })} maxLength={12} disabled={isSubmitted} /></div>
+            <div className="grid gap-2"><Label>PAN number</Label><Input value={form.pan_no} onChange={(e) => setForm({ ...form, pan_no: e.target.value })} maxLength={10} disabled={isSubmitted} /></div>
+            <div className="grid gap-2"><Label>Driving license no. *</Label><Input value={form.driving_license_no} onChange={(e) => setForm({ ...form, driving_license_no: e.target.value })} disabled={isSubmitted} /></div>
+            <div className="grid gap-2"><Label>Vehicle RC no. *</Label><Input value={form.vehicle_rc_no} onChange={(e) => setForm({ ...form, vehicle_rc_no: e.target.value })} disabled={isSubmitted} /></div>
           </div>
           <div className="space-y-3 pt-2">
             {docLabels.map((d) => (
               <div key={d.key} className="grid gap-2">
                 <Label>{d.label} {partner?.[`${d.key}_path`] && <span className="text-xs text-muted-foreground">(uploaded)</span>}</Label>
-                <Input type="file" accept="image/*,application/pdf" onChange={(e) => setFiles((f) => ({ ...f, [d.key]: e.target.files?.[0] ?? null }))} />
+                <Input type="file" accept="image/*,application/pdf" onChange={(e) => setFiles((f) => ({ ...f, [d.key]: e.target.files?.[0] ?? null }))} disabled={isSubmitted} />
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
 
-      <Button onClick={submit} disabled={saving} size="lg" className="w-full">
-        {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-        Submit for verification
-      </Button>
+      {!isSubmitted && (
+        <Button onClick={submit} disabled={saving} size="lg" className="w-full">
+          {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+          Submit for verification
+        </Button>
+      )}
     </div>
   );
 };
