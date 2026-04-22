@@ -153,6 +153,22 @@ function ActiveJobCard({ job, processing, onDeliver }: { job: any; processing: s
              </a>
            )}
         </div>
+
+        {/* Items Section */}
+        {job.orderItems?.length > 0 && (
+          <div className="space-y-2">
+            <span className="text-[10px] uppercase tracking-widest text-slate-400 font-black">Items to Deliver</span>
+            <div className="space-y-1.5">
+              {job.orderItems.map((it: any, idx: number) => (
+                <div key={idx} className="flex justify-between items-center text-xs bg-white border border-slate-100 rounded-lg p-2">
+                  <span className="font-bold text-slate-700">{it.medicine_name}</span>
+                  <span className="bg-slate-100 px-1.5 py-0.5 rounded font-black text-[10px]">x{it.quantity}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button
@@ -213,14 +229,31 @@ const DeliveryJobs = () => {
   const [windowSec, setWindowSec] = useState(120);
   const prevJobIds = useRef<Set<string>>(new Set());
 
-  // ── Enrich orders with profile data ────────────────────────────────────────
+  // ── Enrich orders with profile data and items ────────────────────────────────
   const enrichOrders = async (orders: any[]) => {
     if (!orders.length) return [];
+    const orderIds = orders.map(o => o.id);
     const customerIds = Array.from(new Set(orders.map(o => o.customer_id)));
-    const { data: profs } = await supabase.from("profiles").select("user_id, full_name, phone").in("user_id", customerIds);
+
+    const [{ data: profs }, { data: items }] = await Promise.all([
+      supabase.from("profiles").select("user_id, full_name, phone").in("user_id", customerIds),
+      supabase.from("order_items").select("*").in("order_id", orderIds)
+    ]);
+
     const pm: Record<string, any> = {};
     (profs ?? []).forEach(p => { pm[p.user_id] = p; });
-    return orders.map(o => ({ ...o, profiles: pm[o.customer_id] ?? { full_name: "Customer", phone: null } }));
+
+    const im: Record<string, any[]> = {};
+    (items ?? []).forEach(i => {
+      if (!im[i.order_id]) im[i.order_id] = [];
+      im[i.order_id].push(i);
+    });
+
+    return orders.map(o => ({ 
+      ...o, 
+      profiles: pm[o.customer_id] ?? { full_name: "Customer", phone: null },
+      orderItems: im[o.id] ?? []
+    }));
   };
 
   // ── Load data ───────────────────────────────────────────────────────────────

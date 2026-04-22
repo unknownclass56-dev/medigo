@@ -34,7 +34,8 @@ export const DashboardShell = ({ brand, nav, children }: Props) => {
       <aside className="hidden w-64 shrink-0 border-r bg-sidebar lg:flex lg:flex-col">
         <div className="flex h-16 items-center border-b px-5">
           <Link to="/" className="flex items-center gap-2">
-            <img src="/logo.png" alt="MediHealth" className="h-10 w-auto object-contain" />
+            <img src="/logo.png" alt="MediHealth" className="h-8 w-auto object-contain" />
+            <span className="text-lg font-black tracking-tight">MediHealth</span>
           </Link>
         </div>
         <nav className="flex-1 space-y-1 p-3">
@@ -74,7 +75,8 @@ export const DashboardShell = ({ brand, nav, children }: Props) => {
       <div className="flex w-full flex-col">
         <header className="flex h-14 items-center justify-between border-b bg-background px-4 lg:hidden">
           <Link to="/" className="flex items-center gap-2">
-            <img src="/logo.png" alt="MediHealth" className="h-8 w-auto object-contain" />
+            <img src="/logo.png" alt="MediHealth" className="h-6 w-auto object-contain" />
+            <span className="font-bold">MediHealth</span>
           </Link>
           <Button variant="ghost" size="sm" onClick={handleSignOut}>
             <LogOut className="h-4 w-4" />
