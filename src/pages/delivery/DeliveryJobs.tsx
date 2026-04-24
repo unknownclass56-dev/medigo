@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Bike, Loader2, MapPin, Phone, CheckCircle2, Timer, Volume2, RefreshCw, Banknote, Smartphone, User } from "lucide-react";
+import { Bike, Loader2, MapPin, Phone, CheckCircle2, Timer, Volume2, RefreshCw, Banknote, Smartphone, User, Store } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { toast } from "@/hooks/use-toast";
@@ -81,9 +81,31 @@ function JobCard({
            <div className="flex items-start gap-2 text-sm">
               <MapPin className="h-4 w-4 text-primary shrink-0 mt-1" />
               <div className="text-slate-600 font-medium leading-relaxed">
-                 <span className="block text-[10px] uppercase tracking-widest text-slate-400 font-black mb-0.5">Delivery Address</span>
+                 <span className="block text-[10px] uppercase tracking-widest text-slate-400 font-black mb-0.5">Delivery To (Customer)</span>
                  {[addr.line1, addr.line2, addr.city, addr.pincode].filter(Boolean).join(", ") || "Address not available"}
               </div>
+           </div>
+
+           {/* Shop Detail Section */}
+           <div className="pt-2 border-t border-slate-200 space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="h-6 w-6 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700">
+                  <Store className="h-3 w-3" />
+                </div>
+                <div className="font-bold text-slate-900 text-sm">{job.pharmacy?.name}</div>
+              </div>
+              <div className="flex items-start gap-2 text-[11px]">
+                <MapPin className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                <div className="text-slate-500 font-medium leading-tight">
+                  <span className="block text-[9px] uppercase tracking-widest text-emerald-400 font-black mb-0.5">Pickup From (Shop)</span>
+                  {job.pharmacy?.address}, {job.pharmacy?.city}
+                </div>
+              </div>
+              {job.pharmacy?.phone && (
+                <a href={`tel:${job.pharmacy.phone}`} className="flex items-center justify-center gap-2 w-full bg-emerald-50 text-emerald-700 rounded-lg px-2 py-1.5 text-[11px] font-black hover:bg-emerald-100 transition-colors">
+                  <Phone className="h-3 w-3" /> CALL SHOP: {job.pharmacy.phone}
+                </a>
+              )}
            </div>
 
            {job.profiles?.phone && (
@@ -142,9 +164,31 @@ function ActiveJobCard({ job, processing, onDeliver }: { job: any; processing: s
            <div className="flex items-start gap-2 text-sm">
               <MapPin className="h-4 w-4 text-primary shrink-0 mt-1" />
               <div className="text-slate-600 font-medium leading-relaxed">
-                 <span className="block text-[10px] uppercase tracking-widest text-slate-400 font-black mb-0.5">Delivery Address</span>
+                 <span className="block text-[10px] uppercase tracking-widest text-slate-400 font-black mb-0.5">Delivery To (Customer)</span>
                  {[addr.line1, addr.line2, addr.city, addr.pincode].filter(Boolean).join(", ") || "Address not available"}
               </div>
+           </div>
+
+           {/* Shop Detail Section */}
+           <div className="pt-2 border-t border-slate-200 space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="h-6 w-6 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700">
+                  <Store className="h-3 w-3" />
+                </div>
+                <div className="font-bold text-slate-900 text-sm">{job.pharmacy?.name}</div>
+              </div>
+              <div className="flex items-start gap-2 text-[11px]">
+                <MapPin className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                <div className="text-slate-500 font-medium leading-tight">
+                  <span className="block text-[9px] uppercase tracking-widest text-emerald-400 font-black mb-0.5">Pickup From (Shop)</span>
+                  {job.pharmacy?.address}, {job.pharmacy?.city}
+                </div>
+              </div>
+              {job.pharmacy?.phone && (
+                <a href={`tel:${job.pharmacy.phone}`} className="flex items-center justify-center gap-2 w-full bg-emerald-600 text-white rounded-lg px-3 py-2 text-sm font-black hover:bg-emerald-700 transition-colors">
+                  <Phone className="h-4 w-4" /> CALL SHOP
+                </a>
+              )}
            </div>
 
            {job.profiles?.phone && (
@@ -235,13 +279,17 @@ const DeliveryJobs = () => {
     const orderIds = orders.map(o => o.id);
     const customerIds = Array.from(new Set(orders.map(o => o.customer_id)));
 
-    const [{ data: profs }, { data: items }] = await Promise.all([
+    const [{ data: profs }, { data: items }, { data: shops }] = await Promise.all([
       supabase.from("profiles").select("user_id, full_name, phone").in("user_id", customerIds),
-      supabase.from("order_items").select("*").in("order_id", orderIds)
+      supabase.from("order_items").select("*").in("order_id", orderIds),
+      supabase.from("pharmacies").select("id, name, phone, address, city, pincode").in("id", orders.map(o => o.pharmacy_id).filter(Boolean))
     ]);
 
     const pm: Record<string, any> = {};
     (profs ?? []).forEach(p => { pm[p.user_id] = p; });
+
+    const sm: Record<string, any> = {};
+    (shops ?? []).forEach(s => { sm[s.id] = s; });
 
     const im: Record<string, any[]> = {};
     (items ?? []).forEach(i => {
@@ -252,6 +300,7 @@ const DeliveryJobs = () => {
     return orders.map(o => ({ 
       ...o, 
       profiles: pm[o.customer_id] ?? { full_name: "Customer", phone: null },
+      pharmacy: sm[o.pharmacy_id] ?? { name: "Pharmacy", phone: null, address: "N/A" },
       orderItems: im[o.id] ?? []
     }));
   };

@@ -9,6 +9,7 @@ import { Loader2, MapPin, Save, Store } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { toast } from "@/hooks/use-toast";
+import { FileText, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import ComplaintForm from "@/components/ComplaintForm";
 
@@ -24,6 +25,8 @@ interface Pharmacy {
   lng: number;
   status: "pending" | "approved" | "rejected" | "suspended";
   is_open: boolean;
+  agreement_signed?: boolean;
+  agreement_pdf_path?: string;
 }
 
 const PharmacyHome = () => {
@@ -114,6 +117,17 @@ const PharmacyHome = () => {
     toast({ title: val ? "Service enabled" : "Service paused", description: val ? "Customers can now order from you." : "Your medicines are hidden from customers." });
   };
 
+  const downloadAgreement = async () => {
+    if (!pharmacy?.agreement_pdf_path) return;
+    try {
+      const { data, error } = await supabase.storage.from("kyc-docs").createSignedUrl(pharmacy.agreement_pdf_path, 300);
+      if (error) throw error;
+      window.open(data.signedUrl, "_blank");
+    } catch (err: any) {
+      toast({ title: "Download failed", description: err.message, variant: "destructive" });
+    }
+  };
+
   if (loading) return <div className="flex h-64 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
   return (
@@ -141,6 +155,11 @@ const PharmacyHome = () => {
                       ? "You're accepting new orders. Customers can see your medicines."
                       : "Service paused — your medicines are hidden from customers."}
                 </div>
+                {pharmacy.agreement_signed && (
+                  <Button variant="link" size="sm" onClick={downloadAgreement} className="p-0 h-auto text-primary font-black uppercase tracking-widest text-[10px] mt-2">
+                    <Download className="h-3 w-3 mr-1" /> Download Signed Agreement (PDF)
+                  </Button>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">

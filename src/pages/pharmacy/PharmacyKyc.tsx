@@ -9,6 +9,8 @@ import { Loader2, Save, Upload, ShieldCheck, XCircle, MapPin } from "lucide-reac
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { toast } from "@/hooks/use-toast";
+import { Checkbox } from "@/components/ui/checkbox";
+import { generateAgreementPDF, AgreementData } from "@/utils/pdfGenerator";
 
 const PharmacyKyc = () => {
   const { user } = useAuth();
@@ -22,6 +24,7 @@ const PharmacyKyc = () => {
     address: "", city: "", pincode: "", lat: 0, lng: 0
   });
   const [shopPhoto, setShopPhoto] = useState<File | null>(null);
+  const [agreementAccepted, setAgreementAccepted] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -107,6 +110,7 @@ const PharmacyKyc = () => {
   const submit = async () => {
     if (!user || !pharmacy) return toast({ title: "Register your pharmacy first", variant: "destructive" });
     if (!form.license_no || !form.owner_aadhaar || !form.address) return toast({ title: "License No, Aadhaar, and Address are required", variant: "destructive" });
+    if (!agreementAccepted && !pharmacy.agreement_signed) return toast({ title: "Please accept the partnership agreement", variant: "destructive" });
     setSaving(true);
 
     let shop_photo_path = pharmacy.shop_photo_path;
@@ -115,6 +119,32 @@ const PharmacyKyc = () => {
       const { error: ue } = await supabase.storage.from("kyc-docs").upload(path, shopPhoto, { upsert: true });
       if (ue) { setSaving(false); return toast({ title: "Upload failed", description: ue.message, variant: "destructive" }); }
       shop_photo_path = path;
+    }
+
+    let agreement_pdf_path = pharmacy.agreement_pdf_path;
+    let agreement_signed = pharmacy.agreement_signed;
+    let agreement_signed_at = pharmacy.agreement_signed_at;
+
+    if (agreementAccepted && !pharmacy.agreement_signed) {
+      try {
+        const pdfBlob = generateAgreementPDF({
+          pharmacyName: pharmacy.name,
+          ownerName: user?.user_metadata?.full_name || "Owner",
+          licenseNo: form.license_no,
+          address: form.address,
+          date: new Date().toLocaleDateString()
+        });
+        const pdfFile = new File([pdfBlob], `agreement-${Date.now()}.pdf`, { type: "application/pdf" });
+        const path = `${user.id}/pharmacy/agreement-${Date.now()}.pdf`;
+        const { error: pe } = await supabase.storage.from("kyc-docs").upload(path, pdfFile);
+        if (pe) throw pe;
+        agreement_pdf_path = path;
+        agreement_signed = true;
+        agreement_signed_at = new Date().toISOString();
+      } catch (err: any) {
+        setSaving(false);
+        return toast({ title: "Agreement generation failed", description: err.message, variant: "destructive" });
+      }
     }
 
     const { error } = await supabase.from("pharmacies").update({
@@ -130,6 +160,9 @@ const PharmacyKyc = () => {
       kyc_status: "pending",
       status: "pending",
       kyc_submitted_at: new Date().toISOString(),
+      agreement_signed,
+      agreement_signed_at,
+      agreement_pdf_path
     }).eq("id", pharmacy.id);
 
     setSaving(false);
@@ -231,6 +264,47 @@ const PharmacyKyc = () => {
                 )}
                 <Input type="file" accept="image/*" onChange={(e) => setShopPhoto(e.target.files?.[0] ?? null)} disabled={isReadOnly} />
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className={isReadOnly && !pharmacy.agreement_signed ? "opacity-70" : ""}>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-primary" /> Partnership Agreement
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="h-48 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-4 text-[11px] font-medium leading-relaxed text-slate-600 space-y-4">
+                <p className="font-black text-slate-900 uppercase tracking-widest text-[10px]">1. DATA PRIVACY & SECURITY</p>
+                <p>The Partner (Pharmacy) agrees that all customer data accessed via the MediHealth Platform is strictly confidential. The Partner shall NOT share, sell, or distribute customer names, phone numbers, addresses, or medical records to any third party.</p>
+                <p className="bg-red-50 text-red-700 p-2 rounded-lg border border-red-100 font-bold">
+                  ANY BREACH OF DATA PRIVACY WILL RESULT IN A MANDATORY FINE OF INR 10,000 AND IMMEDIATE ACCOUNT TERMINATION.
+                </p>
+                <p className="font-black text-slate-900 uppercase tracking-widest text-[10px]">2. SERVICE LEVELS</p>
+                <p>The Partner agrees to maintain high standards of medicine authenticity and ensures that all items are well within their expiry dates.</p>
+                <p className="font-black text-slate-900 uppercase tracking-widest text-[10px]">3. ELECTRONIC SIGNATURE</p>
+                <p>By checking the box below and submitting this KYC, the Partner provides their electronic signature and agrees to all terms and conditions of the MediHealth Partnership.</p>
+              </div>
+
+              <div className="flex items-center space-x-2 pt-2">
+                <Checkbox 
+                  id="agreement" 
+                  checked={agreementAccepted || pharmacy.agreement_signed} 
+                  onCheckedChange={(checked) => setAgreementAccepted(checked as boolean)}
+                  disabled={isReadOnly || pharmacy.agreement_signed}
+                />
+                <label 
+                  htmlFor="agreement"
+                  className="text-sm font-bold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  I agree to the MediHealth Partnership Terms & Privacy Policy
+                </label>
+              </div>
+              {pharmacy.agreement_signed && (
+                <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-emerald-100">
+                  Agreement Signed on {new Date(pharmacy.agreement_signed_at).toLocaleDateString()}
+                </Badge>
+              )}
             </CardContent>
           </Card>
 
